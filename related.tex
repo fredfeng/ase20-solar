@@ -1,0 +1,111 @@
+% !TEX root =  main.tex
+\section{Related Work}
+Smart contract security has been extensively studied in recent years. 
+This section briefly discusses prior closely related work.
+
+\paragraph{Smart Contract Analysis}
+Many popular security analyzers for smart contracts are based on symbolic
+execution~\cite{symbolic-e}. Well-known tools include Oyente~\cite{oyente},
+Mythril~\cite{mythril} and Manticore~\cite{manticore}. Their key idea is to find
+an execution path that satisfies a given property or assertion. While \toolname
+also uses symbolic evaluation to search for attack programs, our system differs
+from these tools in two ways. First, the prior tools adopt symbolic execution
+for \emph{bug finding}. Our tool can be used not only for bug finding but also
+for \emph{exploit generation}. Second, while symbolic execution is a powerful
+and precise technique for finding security vulnerabilities, it does not
+guarantee to explore all possible paths, which leads to false negative rates as
+shown in Section~\ref{sec:teether}. In contrast, \toolname analyzes all
+(bounded) paths through a contract using summary-based symbolic evaluation,
+which significantly reduces the number of paths that the underlying Rosette
+engine has to execute symbolically while maintaining the same precision.
+
+To address the scalability and path explosion problems in symbolic execution,
+researchers developed sound and scalable static
+analyzers~\cite{ecf,securify,madmax,zeus}. Both Securify~\cite{securify} and
+Madmax~\cite{madmax} are based on abstract interpretation~\cite{CousotC77},
+which soundly overapproximates and merges execution paths to avoid path
+explosion. The ZEUS~\cite{zeus} system takes the source code of a smart contract
+and a policy as inputs, and then compiles them into LLVM IRs that will be
+checked by an off-the-shelf verifier~\cite{smack}. The ECF~\cite{ecf} system is
+designed to detect the DAO vulnerability. Similar to our tool, Securify also
+provides a query language to specify the patterns of common vulnerabilities.
+Unlike our tool, none of these systems can generate exploits. We could not
+directly compare \toolname with Zeus as the tool and benchmarks
+are not publicly available. However, we note that our system is complementary to
+existing static analyzers such as Securify: in particular, we can use Securify
+to filter out safe smart contracts and leverage \toolname to generate exploits
+for vulnerable ones.
+
+Some systems~\cite{Hirai17,GrishchenkoMS18,kframework} for reasoning about smart contracts
+rely on formal verification. These systems prove security properties of smart
+contracts using existing interactive theorem provers~\cite{coq}. They
+typically offer strong guarantees that are crucial to smart contracts. However,
+unlike our system, all of them require significant manual effort to encode the
+security properties and the semantics of smart contracts.
+
+% Finally, reverse engineering projects~\cite{porosity, madmax, Erays} aim to to
+% lift EVM bytecode to an intermediate representation that is easy to analyze.
+% Although \toolname uses the IRs from Vandal~\cite{madmax}, our technique is
+% agnostic to the underlying language.
+
+\paragraph{Automatic Exploitation}
+Our work is also closely related to automatic
+exploitation~\cite{AvgerinosCHB11,ChaARB12,teether,contractfuzzer}. While  
+prior systems rely on constraint solvers to generate counterexamples as
+potential exploits, we note that there are additional challenges in automatic
+exploitation for smart contracts. First, the exploits in classical
+vulnerabilities (e.g., buffer overflows, SQL injections) are typically program
+inputs of a specific data type (e.g., integer, string) whereas the exploits in
+our setting are adversarial smart contracts that faithfully model the execution
+environment (storage, gas, etc.) of the EVM. Second, Keccak-256 hash is
+ubiquitous in smart contract for accessing addresses in memory or storage. As
+shown in Section~\ref{sec:teether}, basic symbolic execution will fail to
+resolve the Keccak-256 hash, resulting in poor coverage. To address this
+problem, the \teether~\cite{teether} system proposed a novel algorithm to infer
+the memory addresses encoded as Keccak-256 hash. Unlike \teether, our system
+directly synthesizes function calls that manipulate the memory and storage thus
+avoids expensive computation to resolve the hash values. Our evaluation in
+Section~\ref{sec:teether} shows that \toolname outperforms the \teether tool in
+terms of both running time and false negatives.  
+% The original teEther also does not mention its running time for getting the 
+% exploits. 
+Similar to \toolname, \contractfuzz~\cite{contractfuzzer} also generates exploits for 
+a limited class of vulnerabilities based on the ABI specifications of smart contracts.
+However, as shown in Section~\ref{sec:fuzz}, since \contractfuzz is 
+based on random input generation, it is an order of magnitude slower than \toolname, 
+resulting in many missed exploits compared to \toolname. Its assertion language is 
+also less expressive than ours, leading to false positives that 
+\toolname avoids.\looseness=-1
+
+\paragraph{Symbolic Evaluation}
+\toolname builds on the Rosette~\cite{rosette} symbolic evaluation engine with a
+new summary-based technique for scaling symbolic evaluation to large programs in
+the domain of smart contracts. As shown in Section~\ref{sec:expr}, this
+technique is critical for performance. The idea of computing summaries to speed
+up symbolic evaluation has also been explored in the context of symbolic
+execution (see~\cite{BaldoniCDDF18} for a survey), leading to three main
+approaches~\cite{AnandGT08,Godefroid07,BoonstoppelCE08}. Two of these
+approaches~\cite{Godefroid07,AnandGT08} compute summaries path-by-path, so a
+full summary that encodes all (bounded) paths through a program would be, in the
+worst case, exponential in program size. Prior tools therefore avoid computing
+full summaries, instead summarizing a subset of all paths for the purpose of
+test generation. \toolname, in contrast, summarizes all (bounded) paths through
+a procedure, and produces compact (polynomially-sized) summaries by employing 
+a symbolic evaluator~\cite{rosette} that combines symbolic execution and bounded model
+checking. Another summarization approach~\cite{BoonstoppelCE08} uses a caching scheme
+that lets the underlying symbolic execution engine terminate the exploration of a
+path as soon as it reaches a previously seen state. The scheme does not compute
+explicit summaries of code; instead, it only stores enough information to
+soundly decide when the symbolic execution of a path reaches a previously seen
+state. In contrast, our approach computes an explicit and precise summary of a
+procedure's semantics.  
+
+\paragraph{Program Synthesis} 
+\toolname uses syntax-guided synthesis~\cite{sygus} to search for attack
+programs. Synthesizers of this kind (see~\cite{synthesis-survey} for a survey)
+rely on either enumerative search (which can be stochastic or exhaustive) or
+symbolic reasoning or a combination of the two. \toolname combines exhaustive
+enumeration with symbolic synthesis (Section~\ref{sec:rosette}), and extends
+this with a parallel symbolic evaluation technique (Section~\ref{sec:parallel}) for fast enumeration. Both optimizations are specialized to
+the domain of smart contracts, and they are critical for performance: disabling
+them renders the system unusable.\looseness=-1

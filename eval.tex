@@ -1,0 +1,33 @@
+% !TEX root =  main.tex
+\section{Evaluation}\label{sec:eval}
+We evaluated \toolname by conducting a set of experiments that are designed to answer the following questions: 
+\begin{itemize}
+% \item Q1: \emph{Expressiveness}: Can \toolname express the specifications of real world vulnerabilities? 
+\item RQ1: \emph{Effectiveness}: How does \toolname compare against state-of-the-art analyzers for smart contracts?
+\item RQ2: \emph{Efficiency}: How much does summary-based symbolic 
+evaluation improve the performance of \toolname?
+% \item Q3: \emph{Expressiveness}: Can \toolname express the specifications of recent vulnerabilities? 
+\end{itemize}
+
+To answer these questions, we perform a systematic evaluation by running
+\toolname on the entire set of smart contracts from \etherscan~\cite{etherscan}.
+Using a snapshot from Feb 13 2019, we obtained a total number of 25,983 smart
+contracts (duplicate contracts were removed). \toolname starts from attack programs of size one and gradually increases
+the size until finding the exploit or running out of time. All experiments in this section are
+conducted on a \texttt{t3.2xlarge} machine on Amazon EC2 with an Intel Xeon
+Platinum 8000 CPU and 32G of memory, running the Ubuntu 18.04 operating system
+and using a timeout of 10 minutes for each smart contract.\looseness=-1
+
+\subsection{Comparison with Existing Tools}\label{sec:comp}
+To show the advantages of our proposed approach, we compare \toolname against three
+state-of-the-art analyzers for exploits generation: \mythril and \teether, based on 
+symbolic execution, and \contractfuzz, based on dynamic random testing.
+% ~\footnote{ 
+% We also did a comparison with the \oyente tool, and the results are included in the supplemental 
+% material.}
+
+\input{oyente.tex}
+\input{teether.tex}
+\input{fuzz.tex}
+\input{impact.tex}
+% \input{case.tex}

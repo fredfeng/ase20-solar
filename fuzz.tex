@@ -1,0 +1,89 @@
+\paragraph{\bf{Comparison with \contractfuzz}}\label{sec:fuzz}
+We further compared \toolname against \contractfuzz~\cite{contractfuzzer}, a recent 
+smart contract analyzer based on dynamic fuzzing. 
+\contractfuzz takes as input the ABI interfaces of smart
+contracts and \emph{randomly} generates inputs invoking the public methods 
+provided by the ABI. To verify the correctness of the exploits, \contractfuzz
+implements oracles for different vulnerabilities by instrumenting
+the Ethereum Virtual Machine (EVM) with extra assertions.
+
+% \begin{figure}
+%   \centering
+%   \begin{subfigure}[b]{0.22\textwidth}
+%     \includegraphics[width=\textwidth]{time-fuzz.pdf}
+%     \caption{Timestamp Dependency}
+%     \label{fig:eval-fuzz-time}
+%   \end{subfigure}
+%   %
+%   \begin{subfigure}[b]{0.22\textwidth}
+%     \includegraphics[width=\textwidth]{gasless.pdf}
+%     \caption{Gasless Vulnerability}
+%     \label{fig:eval-fuzz-gas}
+%   \end{subfigure}
+% \caption{Comparing \toolname against \contractfuzz}% on obfuscated apps}
+% \label{fig:eval-fuzz}
+% \end{figure}
+
+\begin{table}[]
+\centering
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+\multirow{2}{*}{Vulnerability} & \multicolumn{3}{l|}{\toolname} & \multicolumn{3}{l|}{\contractfuzz} \\ \cline{2-7} 
+                               & No.       & FP       & FN      & No.        & FP        & FN        \\ \hline
+Timestamp                      & 16        & 0        & 1       & 13         & 4         &7         \\ \hline
+Gasless Send                   & 17        & 0        & 0       & 14         & 3         & 6         \\ \hline
+Bad Random                     & 9        & 0        & 0       & 5          & 1         & 5         \\ \hline
+\end{tabular}
+\caption{Comparing \toolname against \contractfuzz}% on obfuscated apps}
+\vspace{-0.2in}
+\label{fig:eval-fuzz}
+\end{table}
+
+We use the docker image~\cite{fuzz-docker} provided by the author of \contractfuzz.
+The original paper does not discuss the performance of the tool, 
+but from our experience, \contractfuzz is slow, taking more than 
+10 mins to fuzz a smart contract. Since it would be time-consuming to 
+run \contractfuzz on the \etherscan data set, we evaluate both tools 
+on the 33 benchmarks from the \contractfuzz artifact~\cite{fuzz-data} plus another
+67 random samples from \etherscan for which we know the ground truth.
+
+\paragraph{Summary of results}
+The results of our evaluation are summarized in Table~\ref{fig:eval-fuzz}.
+For the timestamp dependency, \contractfuzz flags 13 benchmarks 
+as vulnerable. However, 4 of them are false alarms, and \contractfuzz fails to detect 7 
+vulnerable benchmarks. On the other hand, \toolname detects most of 
+the benchmarks with only one false negative, which is caused by a timeout of the Vandal
+decompiler~\cite{madmax}.\looseness=-1
+
+Similarly, for the Gasless-send vulnerability, 14 benchmarks are flagged by \contractfuzz.
+However, 3 of them are false positives, and 6 vulnerable benchmarks can not be detected 
+within 10 minutes. In contrast, \toolname successfully generates exploits for 
+all the vulnerable benchmarks.
+
+\paragraph{Performance}
+On average, \contractfuzz takes 10 mins to analyze a smart contract. 
+\toolname takes an average of 11 seconds on this data set.
+
+\paragraph{Discussion}
+The cause of false negatives in \contractfuzz is easy to understand as it is
+based on random, rather than exhaustive, exploration of an extremely large
+search space. So if there are relatively few inputs in this space that lead to
+an attack, \contractfuzz is unlikely to find one in reasonable time. The false
+positives in \contractfuzz are caused by the limited expressiveness of its
+assertion language. For instance, the Time Dependency is defined as the
+following assertion in \contractfuzz: 
+\[
+\textbf{TimestampOp} \wedge (\textbf{SendCall} \vee \textbf{EtherTransfer})
+\]
+The assertion raises a Time Dependency vulnerability if the smart contract
+contains the \texttt{timestamp} and \texttt{call} instructions. It is
+easy to raise false alarms with this assertion if the \texttt{call} instruction 
+does not depend on \texttt{timestamp}. 
+%On the other hand, the \texttt{interfere?} function enables \toolname to reason about this dependency precisely.
+
+\fbox{
+\begin{minipage}{0.9\linewidth}
+{\bf Result for RQ1:}
+\toolname outperforms three state-of-the-art analyzers in terms of running time, false positives, and false negatives.
+\end{minipage}
+} \\

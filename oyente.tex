@@ -1,0 +1,159 @@
+% !TEX root =  main.tex
+% \section{Comparison with \oyente}\label{sec:oyente}
+\paragraph{Comparison with \mythril}\label{sec:oyente}
+% \begin{figure}
+%   \centering
+%   \begin{subfigure}[b]{0.22\textwidth}
+%     \includegraphics[width=\textwidth]{time.pdf}
+%     \caption{Timestamp Dependency}
+%     \label{fig:eval-oyente-time}
+%   \end{subfigure}
+%   %
+%   \begin{subfigure}[b]{0.22\textwidth}
+%     \includegraphics[width=\textwidth]{dao.pdf}
+%     \caption{Reentrancy}
+%     \label{fig:eval-oyente-dao}
+%   \end{subfigure}
+% \caption{Comparing \toolname against \oyente}% on obfuscated apps}
+% \label{fig:eval-oyente}
+% \end{figure}
+
+% \begin{table}[]
+% \begin{tabular}{|l|l|l|l|l|l|l|l|l|}
+% \hline
+% \multirow{2}{*}{Vulnerability} & \multicolumn{4}{l|}{\toolname} & \multicolumn{4}{l|}{\oyente} \\ \cline{2-9} 
+%                                & No.     & Chk    & FP   & FN   & No.    & Chk   & FP   & FN   \\ \hline
+% Timestamp                      & 1245    & 20     & 0    & 1    & 660    & 20    & 18   & 20   \\ \hline
+% Reentracy                      & 248     & 20     & 0    & 0    & 90     & 20    & 5    & 3    \\ \hline
+% \end{tabular}
+% \caption{Comparing \toolname against \oyente}% on obfuscated apps}
+% \label{fig:eval-oyente}
+% \end{table}
+
+% We first compare with \oyente~\cite{oyente}, which takes as input 
+% a smart contract and checks whether there are concrete traces that match
+% the tool's predefined security properties. If so, the tool returns a counterexample
+% as the exploit. We evaluate \oyente and \toolname on the \etherscan data set, and 
+% both systems use a timeout of ten minutes.
+
+We first compare with \mythril~\cite{mythril} by generating exploits for the reentrancy vulnerability. \mythril takes as input 
+a smart contract and checks whether there are concrete traces that match
+the tool's predefined security properties. If so, the tool returns a counterexample
+as the exploit. We evaluate \mythril and \toolname on the \etherscan data set, and 
+both systems use a timeout of 10 minutes.\looseness=-1
+
+% The \oyente tool supports four different types of vulnerabilities, namely, 
+% call-stack-limit, Timestamp dependency~\cite{attack4}, Reentrancy~\cite{attack1}, 
+% and Transaction-Ordering dependency (TOD)~\cite{attack4}. Since the call-stack-limit
+% vulnerability had already been fixed by the Solidity team and the TOD vulnerability
+% requires synthesizing multiple programs, we will cover the 
+% remaining two vulnerabilities.
+
+\paragraph{Summary of results}
+% The results of our evaluation are summarized in Table~\ref{fig:eval-oyente}. In particular, for the Timestamp dependency vulnerability, there
+% are 485 benchmarks where both tools report a vulnerability and find the exploits.
+% 39 benchmarks are flagged as vulnerable by \oyente but \toolname can not find 
+% the exploits. We manually inspected the source code of those benchmarks and 
+% confirm that 30 of them are false positives. On the other hand, 842
+% benchmarks are flagged as safe by \oyente while \toolname manages to find
+% their exploits. To verify the reports of our tool, we randomly select 
+% 20 benmarks and confirm 18 of them are actually vulnerable. In the meantime,
+% we also contacted the author of \oyente and confirmed our report.
+
+% For the Reentrancy vulnerability, 49 benchmarks are flagged by both tools.
+% 41 benchmarks are flagged as vulnerable by \oyente while \toolname cannot
+% find the exploits. After manual inspection, we confirm all of them are false 
+% positives. In contrast, 128 benchmarks are marked as safe but \toolname 
+% successfully finds their exploits, and we manage to reproduce 102 of the attacks 
+% in our testbed.
+
+For 156 contracts flagged as vulnerable
+by at least one tool, we manually determine the ground truth and summarize the results in Figure~\ref{fig:eval-oyente}. 
+% As shown in Table~\ref{fig:eval-oyente-fp-fn}, for 
+% the Timestamp vulnerability, the FN and FP rates of \toolname are 7\% and 10\%,
+% while the FN and FP rates of \oyente on our selected data set are 36\% and 35\%.
+% The result on the Reentrancy vulnerability is similar: 
+The false negative (FN) and false positive (FP) rates of \toolname are 7\% and 3\%,
+while the FN and FP rates of \mythril  are 26\% and 12\%.
+
+\paragraph{Performance}
+\mythril takes an average of 23 seconds to analyze a contract, 
+while \toolname takes an average of 8 seconds for this data set.
+\paragraph{Discussion} 
+% To understand why \oyente has higher false positive and negative rates than
+% \toolname, we manually inspected 20 randomly chosen samples from each category. 
+% The results of this analysis are as follows.
+
+The high false negative rate in \mythril is caused by low coverage on the
+corresponding benchmarks. In the presence of large and complex
+methods, \mythril fails to generate traces that trigger the vulnerability.
+Moreover, \mythril does not support cross-function re-entrancy, i.e., re-entrancy attacks span over multiple functions of the
+victim contract.\looseness=-1 
+
+% The false positives in \mythril can be attributed to two root causes. The first
+% is that the tool does not model the semantics of the gas system, and its query
+% language cannot reason about gas consumption in a smart contract. For instance,
+% \mythril will report spurious Reentrancy vulnerabilities even though the gas
+% specified by the victim is insufficient for an attacker to generate the exploit.
+% On the other hand, since \toolname precisely models the semantics of the gas
+% system, we are able to achieve a low false positive rate. The second cause of
+% false positives is due to the exploration of paths that an attacker cannot
+% trigger. 
+%The vulnerable functions of the second type of smart contracts
+%strictly check whether the caller of them is the owner of the
+%smart contract specified during contract creation. Since there is
+%no way for an external account to invoke the function containing
+%ether transfer, reentrant attack is also not possible. 
+% For instance, \oyente marks the following code as Reentrancy vulnerability 
+% even though an attacker has no permission to trigger it.
+% \begin{lstlisting}[escapechar=@]
+% public function mintETHRewards(
+%   address _contract, uint256 _amount) 
+%   @\textbf{onlyManager}@() {
+%   require(_contract.call.value(_amount)());}
+% \end{lstlisting}
+
+We also investigated the cause of false positives 
+reported by \toolname. It turns out that the false positives are 
+caused by the imprecision of our queries. 
+% Recall from Section~\ref{sec:vul}
+% that we use a specific pattern of traces to \emph{overapproximate} the
+In particular, we use a specific pattern of traces to \emph{overapproximate} the 
+behavior of the Reentrancy attack. While effective and 
+efficient in practice, our query may generate spurious 
+exploits that are infeasible. To mitigate this limitation, one 
+compelling approach for developing secure smart contracts is to 
+ask the developers to provide invariants that the tool can use to 
+rule out infeasible attacks. 
+%for preventing the vulnerabilities, 
+%and then use \toolname to search for exploits that violate the invariants. 
+\input{barchart-obs.tex}
+% \begin{table}
+% \centering
+% \begin{tabular}{|c|c|c|c|c|}
+% \hline
+% \multirow{2}{*}{Vulnerability} & \multicolumn{2}{c|}{\toolname} & \multicolumn{2}{c|}{\oyente} \\ \cline{2-5} 
+%                               & FP             & FN            & FP            & FN           \\ \hline
+% Timestamp                      & 7\%            & 10\%            & 36\%             & 35\%            \\ \hline
+% Reentrancy                     & 14\%             & 5\%           & 43\%             & 37\%            \\ \hline
+% \end{tabular}
+% \caption{Analysis of the results based on full inspection on 20 random samples 
+% from $S \cup O$}
+% \label{fig:eval-oyente-fp-fn}
+% \end{table}
+
+% \begin{table}
+% \centering
+% \begin{tabular}{|l|l|l|l|}
+% \hline
+% \multicolumn{1}{|c|}{\multirow{2}{*}{Vulnerability}} & \multicolumn{3}{l|}{Number of vulnerable contracts} \\ \cline{2-4} 
+% \multicolumn{1}{|c|}{}                               & \multicolumn{1}{c|}{$S \land O$}            & \multicolumn{1}{c|}{$S - O$}           & \multicolumn{1}{c|}{$O - S$}           \\ \hline
+% Timestamp   &\multicolumn{1}{c|}{485}  &\multicolumn{1}{c|}{842}   &\multicolumn{1}{c|}{39}                \\ \hline
+% Reentracy   &\multicolumn{1}{c|}{49}  &\multicolumn{1}{c|}{128}   &\multicolumn{1}{c|}{41}                \\ \hline
+% \end{tabular}
+% \caption{Comparing \toolname ($S$) against \oyente ($O$).
+% $S \land O$, $S - O$, and $O - S$ represent \# of benchmarks 
+% reported by both tools, $S$ only, and $O$ only, respectively.}% on obfuscated apps}
+% \label{fig:eval-oyente}
+% % \vspace{-0.1in}
+% \end{table}

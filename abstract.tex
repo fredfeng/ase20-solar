@@ -1,0 +1,21 @@
+\begin{abstract}
+% Smart contracts are programs running on top of blockchain platforms. They
+% interact with each other through well-defined interfaces to perform financial
+% transactions in a distributed system with no trusted third parties. But these
+% interfaces also provide a favorable setting for attackers, who can exploit
+% security vulnerabilities in smart contracts.
+%to achieve financial gain. 
+
+This paper presents \toolname, a system for automatic synthesis of adversarial
+contracts that exploit vulnerabilities in a victim smart contract.
+To make the synthesis tractable, we introduce a query language as well as \emph{summary-based
+symbolic evaluation}, which significantly reduces the number of instructions
+that our synthesizer needs to evaluate symbolically, without compromising the
+precision of the vulnerability query. We encoded common
+vulnerabilities of smart contracts and evaluated
+\toolname on the entire data set from \etherscan. 
+%with $>$25K smart contracts. 
+Our experiments demonstrate the benefits of summary-based symbolic evaluation and
+show that \toolname outperforms state-of-the-art smart contracts analyzers,
+\teether, \mythril, and \contractfuzz, in terms of running time, precision, and soundness.\looseness=-1
+\end{abstract}

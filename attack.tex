@@ -1,0 +1,140 @@
+\subsection{Attack Synthesis}\label{sec:attack}
+
+Given a vulnerability query, we are interested in synthesizing an attack 
+program that can exploit this vulnerability in a victim contract. 
+The basic building blocks of an attack program are called 
+\emph{components}, and each component $\comp$ corresponds to a public method provided by the  
+victim contract. We use $\comps$ to denote the union of all publicly available 
+methods.
+
+\begin{definition}{{(\bf Component)}}
+A \emph{Component} $\comp$ from an ABI configuration is a pair $(f, \tau)$ where: 1) $f$ is $\comp$'s name, and 2) $\tau$ is the type signature of $\comp$.
+% \begin{itemize}
+% \item $f$ is $\comp$'s name. 
+% \item $\tau$ is the type signature of $\comp$.
+% \end{itemize}
+\end{definition}
+
+\begin{example}
+Consider the ABI configuration in Figure~\ref{fig:batchcode}. Its first element 
+declares a component for the problematic \texttt{batchTransfer} method. 
+This component takes inputs as an 
+array of \texttt{address} and a 256-bit integer (\texttt{uint256}). 
+\end{example}
+
+
+%Given a component $\comp(t_1,...,t_n)$ where $t_i$ are symbolic values, we write
+%$\peval{\comp(t_1,...,t_n)}$ to represent the result of executing $\comp(t_1,...,t_n)$ on
+%program state $\pstate$.
+
+We represent a set of candidate attack programs as a \emph{symbolic program}, 
+which is a sequence of \emph{holes} to be filled with components from $\comps$. 
+The synthesizer fills these holes to obtain 
+a \emph{concrete program} that exploits a given vulnerability.
+\begin{definition}{{(\bf Symbolic Attack Program)}}\label{def:symbolic-attack}
+Given a set of components $\comps=\{(f_1,\tau_1),\ldots,(f_N,\tau_N)\}$, a \emph{symbolic attack program} $\sketch$ 
+for $\comps$ is a sequence of \emph{statement holes} of the form\looseness=-1
+$$
+\mathtt{choose}(f_1({\vec{v}_{\tau_1}}), \ldots, f_N({\vec{v}_{\tau_N}}));
+$$
+where $f_i({\vec{v}_{\tau_i}})$ stands for the application of the
+$i$-th component to fresh symbolic values of types specified by $\tau_i$. 
+\end{definition}
+% Our synthesis procedure starts with the most general sketch $\sketch$ and 
+% iteratively refines it to obtain concrete programs. Specifically, we express sketch using 
+% a \emph{refinement list} whose elements and size can change dynamically. 
+% Adequately, the list represents a partial program in our sketch
+% language of which context-free grammar is defined in Figure~\ref{fig:sketch}.
+% According to the grammar, we can apply two different rules on a sketch $\sketch$,
+% namely, \emph{instantiation}, whose goal is to pick a component $\comp$ from $\comps$ 
+% and set all the arguments to be symbolic, and \emph{expansion}, whose goal is to 
+% expand current sketch. 
+\begin{definition}{{(\bf Concrete Attack Program)}}
+A \emph{concrete attack program} for a symbolic program $\sketch$ 
+replaces each hole in $\sketch$ with one of the specified function calls, 
+and each symbolic argument to a function call is replaced with a concrete value.
+\end{definition}
+\begin{example}
+Here is a symbolic program that captures the attack candidate in
+Fig~\ref{fig:batchcode}:
+\begin{lstlisting}[numbers=none,frame=none,basicstyle=\footnotesize\ttfamily]
+choose(makeFlag($x_1$), batchTransfer($y_1$,$z_1$));  
+choose(makeFlag($x_2$), batchTransfer($y_2$,$z_2$)); 
+\end{lstlisting}
+And here is a concrete attack program for this symbolic attack:  
+\begin{lstlisting}[numbers=none,frame=none,basicstyle=\footnotesize\ttfamily]
+makeFlag(true); 
+batchTransfer([0x123,0x345], $2^{256}-1$);  
+\end{lstlisting}
+
+\end{example}
+
+The $\mathtt{choose}$ construct is a notational shorthand for a conditional statement that guards the specified choices with fresh
+symbolic booleans. For example, $\mathtt{choose}(e_1, e_2)$ stands for the statement $\mathtt{if}\ b_1\ \mathtt{then}\ e_1\
+\mathtt{else}\ e_2$, where $b_1$ is a fresh symbolic boolean value. A concrete
+attack program therefore substitutes concrete values for the implicit $\mathtt{choose}$ guards and the
+explicit function arguments of a symbolic attack program. 
+
+
+% \begin{figure}[t]
+% \[
+% \begin{array}{lll}
+% {\rm Term} \ t:\tau & := & (\texttt{define-symbolic freshId }  \tau?)  \\
+% {\rm Sketch} \ \sketch & := &   \sketch \ | \ \sketch; \sketch \ \ {\rm -expansion}\\
+% & & | \ \comp(t_1:\tau_1,...,t_n:\tau_n) \ \ (\comp \in \comps) \ \ {\rm -instantiation}
+% \end{array}
+% \]
+% \caption{Context-free grammar for sketch}\label{fig:sketch}
+% \end{figure}
+
+% \begin{figure}
+% \lstinputlisting[language=Java]{code.sol}
+% \caption{A Smart Contract written in Solidity.}
+% \label{fig:code}
+% \end{figure}
+
+% \begin{figure}
+% \lstinputlisting[language=Java]{abi.json}
+% \caption{Contract Application Binary Interface (ABI) for the example in Figure~\ref{fig:code}.}
+% \label{fig:abi}
+% \end{figure}
+
+
+
+%Since attack programs are valid programs in our language, 
+%their semantics is given by the rules in Figure~\ref{fig:sem}. 
+%\begin{definition}{{(\bf State Transition over symbolic program $\sketch$)}}
+%  Since a symbolic program $\sketch$ is a sequence of statements, a
+%  \emph{State Transition} $\transition^{*}$ over $\sketch$ is obtained 
+%  by sequentially invoking the rules in Figure~\ref{fig:sem}.
+%  We denote the transition using $\pstate \reach_{\sketch} \pstate'$. 
+%\end{definition} 
+
+%We write $\peval{\sketch}$ to denote the result of executing 
+%a symbolic attack program $\sketch$ from the program state $\pstate$.
+%The result $\peval{\sketch}$
+%represents the set of states reachable by all concrete programs for $\sketch$ starting from the state $\pstate$. 
+The goal of attack synthesis is to  
+find a concrete program $P$ for a given symbolic program $\sketch$ 
+such that $P$ reaches a state satisfying a desired vulnerability query.
+
+
+\begin{definition}{{(\bf Problem Specification)}}
+The specification for our \emph{attack synthesis} problem is a tuple ($\pstate_0$, $\vulnerability$, $\sketch$) where:
+\begin{itemize}
+\item $\sketch$ is a symbolic attack program for the set of components $\comps$
+of a victim contract $\victim$.
+\item $\pstate_0$ is the initial state of the symbolic attack program, obtained by executing the victim's initialization code.
+\item $\vulnerability$ is a first-order formula over the (symbolic) program state
+$\peval{\sketch}$ reachable from $\pstate_0$ by the attack program $\sketch$.
+\end{itemize}
+\end{definition}
+\begin{definition}{{(\bf Attack Synthesis)}}
+Given a specification ($\pstate_0$, $\vulnerability$, $\sketch$), the 
+\emph{Attack Synthesis problem} is to find a \emph{concrete attack program} $P$ for
+$\sketch$ such that: 1) $\geval{ P }_{\pstate_0} = \pstate$, and 2) $\pstate \models \vulnerability$.
+In other words, executing 
+% the concrete attack 
+$P$ from the initial state $\pstate_0$
+results in a program state $\pstate$ that satisfies $\vulnerability$.
+\end{definition}

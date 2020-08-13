@@ -1,0 +1,70 @@
+\documentclass[pageno]{jpaper}
+
+%replace XXX with the submission number you are given from the ASPLOS submission site.
+\newcommand{\asplossubmissionnumber}{1419}
+
+\usepackage[normalem]{ulem}
+\usepackage{booktabs}   %% For formal tables:
+                        %% http://ctan.org/pkg/booktabs
+\usepackage{xspace}
+\usepackage{amsmath}
+\usepackage{cite}
+\usepackage{amsthm}
+\usepackage{thmtools}
+\usepackage{bussproofs}
+\usepackage{syntax} 
+\usepackage{enumitem}
+\usepackage{color}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{listings}
+
+% \lstset{numbers=left,xleftmargin=2em,linewidth=8.5cm,escapeinside={(*}{*)},mathescape,basicstyle=\ttfamily}
+\lstset{escapeinside={(*}{*)},mathescape}
+
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{amssymb}% http://ctan.org/pkg/amssymb
+\usepackage{pifont}% http://ctan.org/pkg/pifont
+\usepackage{multirow}
+\usepackage{wasysym}
+
+\newtheorem{definition}{Definition}
+\newtheorem{example}{Example}
+\newtheorem{theorem}{Theorem}
+\newtheorem{vul}{Vulnerability}
+
+\begin{document}
+
+\title{Precise and Scalable Attack Synthesis for Smart Contracts}
+
+\date{}
+\maketitle
+
+\thispagestyle{empty}
+
+\input{macros}
+\input{abstract}
+
+\input{intro}
+\input{background.tex}
+\input{overview.tex}
+\input{problem.tex}
+\input{sum-interp.tex}
+\input{impl.tex}
+\input{eval.tex}
+\input{related.tex}
+\input{concl.tex}
+
+\bibliographystyle{plain}
+\bibliography{main}
+
+%% Appendix
+% \appendix
+% \input{semantics}
+% \input{express}
+% \input{teether.tex}
+
+\end{document}
+

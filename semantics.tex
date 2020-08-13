@@ -1,0 +1,157 @@
+\section{Operational semantics for our smart contract language}\label{sec:express}
+\begin{figure}
+\small
+\begin{prooftree}
+\AxiomC{$s = \textbf{no-op}$}
+\LeftLabel{\texttt{no-op}}
+\UnaryInfC{$\pstate \vdash s: \pstate'[\text{pc++}]$}
+\end{prooftree}
+\vspace{0.05in}
+
+\begin{prooftree}
+\AxiomC{$s=(\textbf{jumpi } d \ e)$}
+\noLine
+\UnaryInfC{$\pstate \vdash e: v$}
+\AxiomC{$i=(v=0)?(pc+1):d$}
+\noLine
+\UnaryInfC{$\pstate' = \pstate[x\gets v,pc\gets i]$}
+\LeftLabel{\texttt{jmp}}
+\BinaryInfC{$\pstate \vdash s: \pstate'$}
+\end{prooftree}
+\vspace{0.05in}
+
+\begin{prooftree}
+\AxiomC{$s = (param := \textbf{def-sym}(e,\tau))$}
+\AxiomC{$v = |(e,\tau)|$}
+\noLine
+\UnaryInfC{$\pstate' = \pstate[param\gets v]$}
+\LeftLabel{\texttt{sym}}
+\BinaryInfC{$\pstate \vdash s: \pstate', v$}
+\end{prooftree}
+\vspace{0.05in}
+
+\begin{prooftree}
+\AxiomC{$s = (x := e)$}
+\AxiomC{$\pstate \vdash e: v$}
+\AxiomC{$\pstate' = \pstate[x\gets v]$}
+\LeftLabel{\texttt{assign}}
+\TrinaryInfC{$\pstate \vdash s: \pstate'[\text{pc++}], v$}
+\end{prooftree}
+\vspace{0.05in}
+
+\begin{prooftree}
+\AxiomC{$s = (x:=e_1 \oplus e_2)(\oplus \in \{+,-,/,\times\})$ }
+\noLine
+\UnaryInfC{$\pstate \vdash e_1: v_1$}
+\noLine
+\UnaryInfC{$\pstate \vdash e_2: v_2$}
+\AxiomC{$v=v_1 \oplus v_2$}
+\noLine
+\UnaryInfC{$\pstate'[x\gets v]$}
+\LeftLabel{\texttt{biop}}
+\BinaryInfC{$\pstate \vdash s: \pstate'[\text{pc++}], v$}
+\end{prooftree}
+\vspace{0.05in}
+
+\begin{prooftree}
+\AxiomC{$s = (s_1;s_2)$ }
+\AxiomC{$\pstate \vdash s_1: \pstate_1, v_1$}
+\noLine
+\UnaryInfC{$\pstate_1\vdash s_2: \pstate_2, v_2$}
+\LeftLabel{\texttt{seq}}
+\BinaryInfC{$\pstate \vdash s: \pstate_2, v_2$}
+\end{prooftree}
+\vspace{0.05in}
+
+\begin{prooftree}
+\AxiomC{$s = (x:=\textbf{sload } e)$ }
+\noLine
+\UnaryInfC{$\pstate \vdash e: \mu$}
+\AxiomC{$\pstate \vdash \mu: v$}
+\noLine
+\UnaryInfC{$\pstate'[x\gets v]$}
+\LeftLabel{\texttt{sload}}
+\BinaryInfC{$\pstate \vdash s: \pstate'[\text{pc++}],v$}
+\end{prooftree}
+\vspace{0.05in}
+
+\begin{prooftree}
+\AxiomC{$s = (\textbf{sstore } \mu \ e)$ }
+\noLine
+\UnaryInfC{$\pstate \vdash e: v$}
+\AxiomC{$\pstate'[\mu\gets v]$}
+\LeftLabel{\texttt{sstore}}
+\BinaryInfC{$\pstate \vdash s: \pstate'[\text{pc++}]$}
+\end{prooftree}
+\vspace{0.05in}
+
+\begin{prooftree}
+\AxiomC{$s = (r_l:=\textbf{call }(e_1 \ e_2 \ e_3))$ }
+\noLine
+\UnaryInfC{$\pstate \vdash e_1: v_1$}
+\noLine
+\UnaryInfC{$\pstate \vdash e_2: v_2$}
+\AxiomC{$\pstate \vdash e_3: v_3$}
+\noLine
+\UnaryInfC{$v=\textbf{call}_i(v_1,v_2,v_3)$}
+\noLine
+\UnaryInfC{$\pstate'[r_l\gets v]$}
+\LeftLabel{\texttt{call}}
+\BinaryInfC{$\pstate \vdash s: \pstate'[\text{pc++}], r_l$}
+\end{prooftree}
+\vspace{0.05in}
+
+\begin{prooftree}
+\AxiomC{$s = (x:= \textbf{sha3 }m \ e)$ }
+\noLine
+\UnaryInfC{$\pstate \vdash m: v_1$}
+\noLine
+\AxiomC{$\pstate \vdash e: v_2$}	
+\noLine
+\UnaryInfC{$v=\textbf{sha3}_i(v_1,v_2)$}
+\noLine
+\UnaryInfC{$\pstate'[x\gets v]$}
+\LeftLabel{\texttt{sha}}
+\BinaryInfC{$\pstate \vdash s: \pstate'[\text{pc++}],v$}
+\end{prooftree}
+\caption{Operational semantics for our language 
+in Figure~\ref{fig:grammar}}
+\label{fig:sem}
+\end{figure}
+Most of the rules in Figure~\ref{fig:sem} specify the standard semantics of EVM 
+instructions. For example, the \texttt{biop} rule describes the meaning of binary operations: 
+it first looks up the values (concrete or symbolic) of the 
+operands in the current program state $\pstate$, applies the binary operator to those
+values (i.e., $v_1, v_2$), and then binds the result to the target variable, 
+increases the program counter, and produces a new program state $\pstate'$. 
+The  \texttt{sstore}, \texttt{sload}, \texttt{jmp}, and \texttt{seq} rules are also standard.
+
+
+The  \texttt{sym},  \texttt{sha3}, and  \texttt{call} rules, on the other hand, are 
+tailored for (efficient) symbolic evaluation. 
+The \texttt{sym} rule introduces symbolic values into the program state. 
+The construct $|(e,\tau)|$ denotes a fresh symbolic variable $e$ of type $\tau$,
+which is bound to the \texttt{def-sym} parameter in the new program state
+$\pstate'$. Here, we do not increase the program counter as the symbolic binding
+is not an EVM instruction.
+The \texttt{sha3} and \texttt{call} instructions are part of EVM, but we overapproximate their 
+semantics with  \emph{uninterpreted functions} to produce more tractable vulnerability queries. 
+
+The standard semantics of the \texttt{sha3} instruction is to obtain a memory 
+location by computing a Keccak-256 hash over a variable length data and its offset.
+
+However, applying hashing functions to symbolic arguments results in hard-to-solve queries. 
+The \texttt{sha3} rule therefore uses an uninterpreted function, denoted by $\texttt{sha3}_i$,  
+to model the original hash function. 
+%In particular, we 
+%first look up the values of the arguments, apply $\texttt{sha3}_i$ to them, 
+%and bind the result to the variable on the left hand side.
+
+As mentioned earlier, the \texttt{call} instruction is used to initiate 
+a transaction with another contract, whose address is specified as an argument.
+The \texttt{call} rule uses an 
+uninterpreted function, denoted by $\texttt{call}_i$, to model the effect of the \texttt{call} instruction. 
+Note that the rule also records the return value of each \texttt{call} using a special variable 
+$r_l$ in $\pstate$, where $l$ is the location of the \texttt{call} command. 
+This handling of \texttt{call} instructions is key to our summary-based symbolic evaluation, as explained 
+in Section~\ref{sec:sum}.\looseness=-1

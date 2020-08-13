@@ -1,0 +1,156 @@
+% !TEX root =  main.tex
+\section{Implementation}\label{sec:impl}
+
+This section discusses the design and implementation of 
+\toolname, as well as two key optimizations that enable our tool 
+to efficiently solve the synthesis attack problem.\looseness=-1
+
+
+\subsection{Symbolic Computation Using \rosette}\label{sec:rosette}
+
+\toolname leverages \rosette~\cite{rosette} to symbolically search for attack
+programs. \rosette is a programming language that provides facilities for
+symbolic evaluation.  \rosette programs use
+assertions and symbolic values to formulate queries about program behavior,
+which are then solved with off-the-shelf SMT solvers. For example, the
+\texttt{(solve expr)} query searches for a binding of symbolic variables to
+concrete values that satisfies the assertions encountered during the symbolic
+evaluation of the program expression \texttt{expr}. \toolname uses the \texttt{solve}
+query to search for a concrete attack program.
+
+
+\begin{figure}
+\centering
+  \begin{minipage}{0.5\linewidth}
+\begin{lstlisting}[linewidth=8cm] 
+(define (solar $\vulnerability$  $\comps$ $K$)
+ (define program (for/list ([i K]) (apply choose* $\comps$)))
+ (define i-pstate (get-initial-state $\comps$))
+ (define o-pstate (interpret program i-state))
+ (define binding (solve (assert ($\vulnerability$ o-pstate))))
+ (evaluate program binding))
+\end{lstlisting}
+\end{minipage}
+\vspace{-0.1in}
+\caption{\toolname implementation in \rosette. 
+ }
+\label{fig:sketch-overview}
+\vspace{-0.1in}
+\end{figure}
+
+Figure~\ref{fig:sketch-overview} shows the implementation of \toolname in Rosette. 
+The tool takes as input a vulnerability specification
+$\vulnerability$, the components $\comps$ of a victim program, and a bound $K$ 
+on the length of the attack program. Given these inputs, line 2 uses $\comps$ to 
+construct a symbolic attack \texttt{program} of length $K$. 
+Next, lines 3 runs the victim's initialization code to obtain the 
+initial program state, \texttt{i-pstate}, for the attack. 
+Then, line 4 evaluates the symbolic attack \texttt{program} on the initial state to 
+obtain a symbolic output state, \texttt{o-pstate}. 
+Finally, lines 5-6 use the \texttt{solve} query to search for a concrete
+attack program that satisfies the vulnerability assertion.
+
+The core of our tool is the \emph{interpreter} for our smart contract language
+(Figure~\ref{fig:grammar}), which implements the semantics from the EVM
+yellow paper~\cite{evm-yellow}. We use this interpreter to compute the symbolic
+summaries of the victim's public methods (Section~\ref{sec:sum}) and to evaluate
+symbolic attack programs. The interpreter itself does not implement symbolic
+execution; instead, it uses \rosette's symbolic evaluation engine to execute
+programs in our language on symbolic values. 
+
+Another key component of \toolname is the \emph{translator} that converts EVM
+bytecode into our language (Figure~\ref{fig:grammar}). The translator leverages the Vandal
+Decompiler~\cite{madmax} to soundly convert the stack-based EVM bytecode into
+its corresponding three-address format in our language. The jump targets are resolved through abstract
+interpretation~\cite{CousotC77}.  We use the translator to convert victim
+contracts to the \toolname language for attack synthesis. Both the translator and the
+interpreter support all the instructions defined in the Ethereum
+specification~\cite{yellowpaper}.\looseness=-1
+
+
+
+% To use \toolname, a security analyst expresses specifications in Racket as 
+% boolean predicates over storage variables. For instance, the time dependency vulnerability
+% from section~\ref{sec:vul} can be expressed as follows:
+% \begin{lstlisting}
+% (define (time-dependent $V_{time}$ $V_{ret}^{call}$)
+% (apply ||
+%   (for*/list ([x $V_{time}$][y $V_{ret}^{call}$])
+%     (interferes? x y))))
+% \end{lstlisting}
+
+\subsection{Parallel Synthesis using Hoisting}\label{sec:parallel}
+
+\toolname uses summary-based symbolic evaluation to efficiently reduce attack
+synthesis problems to satisfiability queries. But the resulting queries can
+still be too difficult %(for both \rosette and the underlying solver) 
+to solve
+in practice, especially when the victim contract has many public methods. To
+further improve performance, \toolname exploits the structure of symbolic attack
+programs (Definition~\ref{def:symbolic-attack}) to decompose the single
+\texttt{solve} query in Figure~\ref{fig:sketch-overview} into multiple smaller
+queries that can be solved quickly and in parallel, without missing any concrete
+attacks.\looseness=-1
+
+The basic idea is as follows. Given a set of $N$ components and a bound $K$ on 
+the length of the attack, line 2 creates a symbolic attack program of the
+following form:
+\begin{lstlisting}[numbers=none,frame=none,basicstyle=\footnotesize\ttfamily]
+  choose$_1$($f_1({\vec{v_1}_{\tau_1}}), \ldots, f_N({\vec{v_1}_{\tau_N}})$);  
+  $\vdots$
+  choose$_K$($f_1({\vec{v_K}_{\tau_1}}), \ldots, f_N({\vec{v_K}_{\tau_N}})$);   
+\end{lstlisting}
+This symbolic attack encodes a set of concrete attacks that can also be
+expressed using $N^K$ symbolic programs that fix the choice of the method to
+call at each line, but leave the arguments symbolic. So, we can enumerate these
+$N^K$ programs and solve the vulnerability query for each of them, instead of
+solving the single query at line 5. This approach essentially \emph{hoists} the
+symbolic boolean guards out of the \texttt{choose} statements in the original query, and
+\toolname explores all possible values for these guards explicitly, rather than
+via SMT solving.\footnote{For practical efficiency, our implementation hoists 
+the guards to generate $N^K/c$ symbolic programs, where $c$ is  
+the number of available cores.} 
+As we show in Section~\ref{sec:eval},
+hoisting the guards leads to significantly faster synthesis, 
+both because it enables parallel solving of the smaller queries, and 
+because the smaller queries can be solved quickly.\looseness=-1
+
+
+
+% \subsection{SMT-based Early Pruning}\label{sec:prune}
+
+% In addition to hoisting, we also design a simple but effective \emph{early pruning}
+% strategy that allows \toolname to prune \emph{infeasible} symbolic programs 
+% before executing them. The intuition behind our strategy is that
+% all attacks expressible in \toolname (e.g.,~\cite{attack1,attack2,attack3}) invoke at least one public method that 
+% manipulates persistent storage and at least one public method that transfers 
+% cryptocurrency using the \texttt{call} instruction. In other words,  
+% a successful attack executes at least one store instruction followed 
+% by at least one \texttt{call} instruction. We express our early pruning strategy using the following 
+% \rosette program:\looseness=-1
+% % \begin{lstlisting}[xleftmargin=.2\textwidth,linewidth=9.6cm]
+% \begin{lstlisting}
+% (define (may-store-and-call? p)
+%  (solve (exists (list i j)
+%   (and (< i j) (= (type p[i]) 'store)
+% 	       (= (type p[j]) 'call)))))
+% \end{lstlisting}
+% This procedure queries the solver to find out if the given symbolic program $p$ contains 
+% any concrete attack program that executes a \texttt{call} after a store. 
+% This query is much faster to solve than a vulnerability query, so if $p$ contains no 
+% feasible candidate, \toolname does not run the vulnerability query for it.\looseness=-1
+
+\subsection{Practical EVM fragment}\label{sec:fragment}
+In this section, we briefly illustrate how \toolname handles other challenging EVM fragments.
+
+\paragraph{Loops} Similar to other analyzers that based on symbolic execution, for loops whose iterations are determined by potentially unbounded collections, \toolname will unroll the loops for $K$ time and $K$ is set to 2 by default.
+
+\paragraph{SHA and Storage access}
+\toolname directly analyzes the EVM bytecode. For complex data structures such as arrays and maps that are ubiquitous, the address of an element is determined by the follow function:
+\[
+a[i] := \textit{SHA-256(id(a))} + n \times i
+\]
+In other words, to access element \texttt{a[i]} whose size is $n$, the address is determined by the
+SHA-256 hash of its identifier and size. \toolname leverages uninterpreted functions to model both the SHA-256 and address computation function. I.e., two addresses are the same as long as they share the same array identifier, index, and element size.
+
+\paragraph{Gas consumption} \toolname's program state keeps tracking of the gas usage by accumulating the cost of instructions during symbolic evaluation. If a transaction runs out of gas in the middle of the evaluation,  \toolname terminates the current exploration with an “out of gas” assertion failure.

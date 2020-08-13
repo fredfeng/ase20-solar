@@ -1,0 +1,87 @@
+\section{Algorithm}\label{sec:algo}
+In this section, we introduce the high-level idea of our synthesis algorithm, 
+leaving the discussion of symbolic evaluation and vulnerability queries
+ to section~\ref{sec:exe} and section~\ref{sec:query}, respectively.
+
+Algorithm~\ref{alg:synthesis} describes the pseudocode of our top-level 
+synthesis algorithm. In particular, given an initial state $\pstate$, 
+a query $\query$ for a security property, and all publicly available 
+components $\comps$ of a given contract, the {\sc Synthesize} procedure 
+either returns an attack program that satisfies $\query$ or produces 
+$\bot$, meaning that no such program exists.
+
+Specifically, the {\sc Synthesize} routine maintains a priority queue 
+$\worklist$ of all available sketches. At the beginning, our $\worklist$
+only contains $\sketch_0$, representing a set of all possible programs.
+In each iteration of the main loop (line 5-14), the algorithm picks a
+sketch $\sketch$ from $\worklist$ and uses the {\sc instantiation} rule
+in Figure~\ref{fig:sketch} to figure out a set of instantiations using 
+components from $\comps$ (line 8). 
+
+Then for each instantiation $\sketch_i$, we symbolically evaluate (line 9, 
+will further elaborate it in section~\ref{sec:exe}) it on the initial 
+state $\pstate$, and the evaluation will return $\pstate^{*}$ as all reachable
+states starting from $\pstate$. 
+
+Now, given a query $\query$ regarding a specific security property (e.g., out-of-gas, overflow, etc), 
+at line 10, we invoke the built-in function {\sc solve} from our underlying engine~\cite{rosette}, and 
+the {\sc solve} function essentially encodes all reachable states in $\pstate^{*}$ as an 
+SMT formula and asks whether there exists a model (i.e., a reachable state) such that 
+$\query$ holds. If the answer is {\sc true}, then it will return a model $I_b$ which maps 
+holes (i.e., symbolic values) to concrete values. Consequently, the {\sc bind} routine will accept $I_b$ and sketch $\sketch_i$ as input, and return a concrete attack program $p$ (line 12).  
+
+On the other hand, if the answer at line 10 is {\sc false}, our algorithm performs 
+sketch refinement at line 14. The intuition behind our sketch refinement is to apply
+the {\sc expansion} rule in Figure~\ref{fig:sketch} 
+on current sketch $\sketch$ to obtain sketches of longer size, which will 
+be added to the priority queue $\worklist$ for future iterations.
+\begin{algorithm}[t]
+\caption{Synthesis Algorithm}\label{alg:synthesis}
+{%\small 
+\begin{algorithmic}[1]
+%\vspace{0.05in}
+\Procedure{Synthesize}{$\pstate, $\query$, \comps$}
+%\vspace{0.05in}
+\State {\rm \bf input:} Initial state $\pstate$, query $\query$,  and components $\comps$
+
+%\State \ \ \ \ \ \ \ \ \ \ \ \ components $\comps$, and tests $\tests$
+\State {\rm \bf output:} Synthesized program or $\bot$ if failure
+\vspace{0.05in}
+
+\State  $\worklist :=$  \{$\sketch_0$\} \Comment{ \ Init worklist}
+
+\While {$\worklist \neq \emptyset$} 
+    \State {\rm choose} $\sketch \in \worklist$;     
+    \State $\worklist := \worklist \backslash \{\sketch\}$ \Comment{Pick a component}
+        \For{$\sketch_i \in$ {\sc instantiate}($\sketch)$}
+            \State $\pstate^{*}$ := $\peval{\sketch_i}$ \Comment{Symbolic evaluation}
+            \State $I_{b}$ := {\sc solve}($\pstate^{*}, \query$) 
+            %\State \Comment{Sketch completion}
+            \If{{\sc SAT}=$I_{b}$}
+            	\State $p$ := {\sc bind}($I_{b}, \sketch_i$) \Comment{Fill $\sketch_i$ with $I_b$}
+                \State \Return $p$
+            \EndIf
+        \EndFor
+    \State $\worklist$ := $\worklist \cup$ {\sc refine}($\sketch$) \Comment{Sketch refinement}
+\EndWhile
+\vspace{0.05in}
+\State \Return $\bot$
+\EndProcedure
+\end{algorithmic}
+}
+\end{algorithm}
+\paragraph{Discussion.}
+The {\sc Synthesize} routine is sound, and it is complete modulo sketches of 
+size up to a certain $K$. That is, if the shape of an attack program $p$ 
+belongs to one of the sketches in our priority queue $\worklist$, 
+then Algorithm~\ref{alg:synthesis} will return a solution.
+Based on the above discussion, we can state the following theorems. 
+\begin{theorem}{{(\bf Soundness)}}
+If {\sc Synthesize} returns an attack program $p$, and we reach a new program state $\pstate$
+by executing $p$, then query $\query$ holds on $\pstate$.
+\end{theorem}
+\begin{theorem}{{(\bf Completeness)}}
+If executing an attack program $p$ reaches a program state on which $\query$ holds,
+and program $p$ belongs to one of the sketches in our priority queue,
+then {\sc Synthesize} will eventually generate such an attack program. 
+\end{theorem}

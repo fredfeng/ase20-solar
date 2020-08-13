@@ -1,0 +1,249 @@
+\subsection{Smart Contract Vulnerabilities}\label{sec:vul}
+We now describe how to express smart contract vulnerabilities in \toolname and what it means for a vulnerability to appear in a program.\looseness=-1
+
+
+Figure~\ref{fig:query-lang} shows our  query language over program traces. In particular, a query consists of three parts: The \textbf{uses} block declares typed variables, which will be matches against variables or statements appearing in the program. The \textbf{matchses} block declares a subsequence of trace that satisfy the pattern. The \textbf{where} clause further refines the search criteria by imposing constraints over program trace. 
+\paragraph{Query variables} Query variables in the \textbf{uses} block correspond to variables or statements in the program trace. Common variables include statements, storage variables, arguments, etc.
+
+\paragraph{Statements} Statements in the query language correspond to events in the execution trace discussed in Section~\ref{sec:problem}. In particular, an event is of type record whose fields are properties of that event. Table~\ref{tbl:stmt-fields} lists the fields of some representative statements appearing in the query. Furthermore, \texttt{seqStmt} (i.e., a; b) specifies that event a happens before b. Finally, An event may be forbidden using the exclusion operator ``!''.
+
+\paragraph{Conditional clauses} The criteria of a query can be further refined using the \emph{conditional clauses} in the \textbf{where} block. In particular, a conditional clause is a boolean expression whose sub-expressions are constants, query variables, fields of query variables, or custom predicate like \texttt{interfere} which we introduce later.
+
+% Here, \texttt{arg}, \texttt{reg}, \texttt{mem}, and
+% \texttt{store} are variables from function arguments, registers, memory, and
+% storage, respectively. Furthermore, variables can also refer to global
+% properties (e.g., balance, address, timestamp) of a smart contract. We use
+% \geval{var} to denote the concrete or symbolic value held by \texttt{var}. The predicate
+% \texttt{(interfere? var e)} determines whether \texttt{var} can interfere with
+% \texttt{e}, as specified in Definition~\ref{def:interfere}. 
+% The expression \texttt{(inst opcode var var ...)} represents an instruction. 
+% For instance, \texttt{(inst call $v_1$ $v_2$ $v_3$ $l$)} denotes a call
+% instruction at location $l$ where variables $v_1$, $v_2$, and $v_3$ represent
+% operands that hold the gas, address, and value of the call. 
+% %Note that we use location $l$ to encode the order of each instruction during symbolic evaluation.
+% With slight abuse of notation, we will  use
+% \texttt{inst.operand} to refer to the operand of an instruction \texttt{inst}.
+% For instance, in the previous instruction, the symbolic expression held by $v_1$
+% can be referenced as $call$.gas. Finally, we can express more complex queries by
+% composing simple expressions with logical operators ($\neq, \vee, \wedge,
+% \exists$, etc.). For queries that contain quantifiers, we use skolemization to make them 
+% quantifier-free  (or reject them if they cannot be skolemized).\looseness=-1
+
+% \begin{figure}[hbt!]
+%   \setlength{\grammarparsep}{0em}
+%     \begin{grammar}
+%     <var>  ::=  <arg> | <reg> | <mem> | <store> | timestamp | ...  
+
+%     <opcode> ::= call | jmp | store | ...  
+  
+%     <E> ::= <const> | \geval{var} | <var> | <E> $\oplus$ <E> | $\neg$<E>
+%     | $\forall$<var>. <E> \\
+%     | $\exists$<var>. <E> | (interfere? <var> <E>) \\
+%     | (inst <opcode> <var> <var> ...) \\
+%     ($\oplus\in\{+, -, >, =, \neq, \vee, \wedge, ...\}$)
+%         \end{grammar}
+%   \caption{Query language for \toolname}
+%   \label{fig:query-lang}
+%   \end{figure}
+
+\begin{figure}[hbt!]
+  \setlength{\grammarparsep}{0em}
+    \begin{grammar}
+    <query> ::= <uses declList;>  \\
+    | <matches {seqStmt}> \\
+    | <where cond> \\
+    
+    <declList> ::= <typeName id (,id)*>
+    
+    <typeName> ::= <id> 
+    
+    <stmt> ::= <transfer> | <sstore> | <jump> | <binaryExp> | <!stmt> ...
+    
+    <seqStmt> ::= <stmt> | <stmt;stmt>  
+    
+    <cond> ::=  <E> $\oplus$ <E> 
+ ($\oplus\in\{+, -, >, \neq, \vee, \wedge, ...\}$)
+ 
+   <E> ::= <const> | \geval{var} | <var> \\
+   | <fieldAccess> | (interfere? <E> <E>)
+   
+   <var> ::= <local> | <argument>
+   
+   <fieldAccess> ::= <id.id>
+   
+   <id> ::= <A-Za-z>*
+
+    \end{grammar}
+  \caption{Query language for \toolname}
+  \label{fig:query-lang}
+  \end{figure}
+
+\paragraph{Compilation of query} 
+Once a query is given, \toolname automatically converts it into its corresponding FOL formulas through a syntax-directed translation. For queries that contain quantifiers, we use skolemization to make them quantifier-free  (or reject them if they cannot be skolemized).\looseness=-1
+
+% \begin{definition}{{(\bf Vulnerability)}}
+% A \emph{Vulnerability} $\vulnerability$ is a predicate over a set of 
+% variables $V$ in the program state. 
+% %where $V$ represents values in persistent storage, 
+% %function arguments, and other vulnerability-specific 
+% %values (timestamp, blockNumber, etc). 
+% A vulnerability $\vulnerability$ appears in the program $P$ 
+% if the execution of $P$ can reach a program state $\pstate'$ that satisfies $\vulnerability$: $\pstate' \models \vulnerability$.
+% % \[
+% %     \pstate' \models \vulnerability
+% % \]
+% \end{definition}
+
+\begin{table}[]
+\begin{tabular}{|l|l|}
+\hline
+\multicolumn{2}{|l|}{\textbf{Fields of transfer statement}} \\ \hline \hline
+\texttt{sender}        & sender's address                   \\ \hline
+\texttt{recipient}     & target's address                   \\ \hline
+\texttt{loc}     & program counter of the statement                   \\ \hline
+\texttt{gas}           & gas budget for the transfer                          \\ \hline
+\texttt{amount}        & amount of tokens                   \\ \hline
+\texttt{ret}        & return value of the statement                   \\ \hline \hline
+\multicolumn{2}{|l|}{\textbf{Fields of jump statement}}     \\ \hline \hline
+\texttt{condVar}     & condition variable of jump statement                     \\ \hline
+\texttt{target}        & target address                     \\ \hline \hline
+\multicolumn{2}{|l|}{\textbf{Fields of sstore statement}}    \\ \hline \hline
+\texttt{name}           & name of storage variable           \\ \hline
+\texttt{value}         & new value that is used             \\ \hline \hline
+\multicolumn{2}{|l|}{\textbf{Fields of binary statement}}   \\ \hline \hline
+\texttt{lhs}           & variable that is assigned          \\ \hline
+\texttt{opcode}        & opcode of the binary statement     \\ \hline
+\texttt{oprand1}       & the first operand                  \\ \hline
+\texttt{oprand2}       & the second operand                 \\ \hline
+\end{tabular}
+    \caption{Fields of core statements appearing in the query language}
+    \label{tbl:stmt-fields}
+\end{table}
+
+The rest of this section introduces a few representative vulnerabilities,
+and shows how they are encoded as formulas in \toolname.
+But first, we introduce an auxiliary function \texttt{interfere?} 
+which will be used by several vulnerabilities.
+
+\begin{definition}{{(\bf Interference)}}\label{def:interfere}
+% Following the negation of the standard non-interference~\cite{non-interfere}, <--- This is confusing ...
+A symbolic variable $v$ interferes with a symbolic expression $e$ if they satisfy
+the following constraint: $\exists v_0,v_1. \ e[v_0/v] \neq e[v_1/v] \land (v_0 \neq v_1)$
+% \[
+%     \exists v_0,v_1. \ e[v_0/v] \neq e[v_1/v] \land (v_0 \neq v_1)
+% \]
+\end{definition}
+\noindent Intuitively, changing $v$'s value will also affect $e$'s output,
+which is denoted as ``(interfere? $v$ $e$)". Interference precisely captures 
+the data- and control-dependencies between two expressions and turns out to be 
+the \emph{necessary condition} of many exploits.
+
+\medskip
+Section~\ref{sec:overview} describes the \batchoverflow vulnerability, 
+which enables an attacker to perform a multiplication that 
+overflows and transfers a large amount of tokens on the attacker's behalf. 
+This vulnerability can be formalized as follows:
+\begin{vul}{{\bf \batchoverflow}}  
+% \begin{equation*}
+% \small
+% \begin{split}
+% \exists arg_0, arg_1, r_1, r_2, r_3, call \ \
+%           r_3 = (r_1 \otimes r_2) \ \land \ \geval{r_2} > \geval{r_3} \\
+%           \land \ (\text{interfere?} \ r_2 \ call.value) \ \land \ (\text{interfere?} \ arg_0 \ call.addr) \\
+%           \land \ (\text{interfere?} \ arg_1 \ call.value)
+% \end{split}
+% \end{equation*}
+\begin{lstlisting}[numbers=none,morekeywords={uses,matches,where,interfere}]
+uses Transfer $t_1$; BinaryExp e; Argument $a_1,a_2$;
+matches {e; $t_1$;} where 
+($e.opcode == "\times" \land \geval{e.oprand1} > \geval{e.lhs}$ 
+$\land$ (interfere? $e.oprand1$ $t_1.amount$)
+$\land$ (interfere? $a_1$ $t_1.recipient$) $\land$ (interfere? $a_2$ $t_1.amount$))
+\end{lstlisting}
+\end{vul}
+\noindent In other words, the victim program contains a \texttt{transfer} instruction whose beneficiary and value 
+can be  controlled by the attacker. Furthermore, the transaction value is also influenced by a variable 
+from an arithmetic operation that overflows.
+
+% A Timestamp Dependency vulnerability occurs if a transaction depends on a timestamp: 
+% \begin{vul}{{\bf Timestamp Dependency}} 
+% \begin{equation*}
+% \small
+% \begin{split}
+% \exists \ \text{timestamp}, call. \ call.value > 0 \ \land 
+%           (\text{interfere?} \ \text{timestamp} \ call.value)
+% \end{split}
+% \end{equation*}
+% \end{vul}
+% \noindent This vulnerability enables a malicious miner to gain an advantage by choosing a suitable timestamp for a block.
+
+An \emph{Unchecked-send Vulnerability} occurs when the programmer fails to check 
+the return values of critical instructions such as \texttt{delegatecall} and \texttt{call}. If these 
+instructions result in runtime errors, the programmer is responsible for manually 
+checking their return values and restoring the program state. Failing to do so can lead to unexpected
+behavior~\cite{gasless}. We formalize the absence of this check as follows: 
+\begin{vul}{{\bf Unchecked-send (Gasless-send)}}
+%An Unchecked-send vulnerability occurs if a return value of a \texttt{call} 
+%instruction is not checked by the programmer.
+%We represent the vulnerability using the following formula:
+% \begin{equation*}
+% \small
+% \begin{split}
+% \neg \forall \ call, \exists \ jmp \ \
+%   (\text{interfere?} \ call.ret \ jmp.var)
+% \end{split}
+% \end{equation*}
+\begin{lstlisting}[numbers=none,morekeywords={uses,matches,where,interfere}]
+uses Transfer $t$; Jump j;
+matches { t; ~j;} where ((interfere? $t.ret$ $j.condVar$))
+\end{lstlisting}
+
+\end{vul}
+\noindent Here, the return value of a \texttt{transfer} instruction does not 
+\emph{interfere with} the conditional variables of any \emph{conditional jump} statements. 
+In other words, this return value is not checked.
+
+The \reentrancy vulnerability (introduced in Section~\ref{sec:intro}) 
+ occurs when an attacker's call is allowed to 
+repeatedly make new calls to the same victim contract without updating the victim's balance. 
+It can be overapproximated as follows:
+\begin{vul}{{\bf Reentrancy}} 
+% \begin{equation*}
+% \small
+% \begin{split}
+% \exists \ \text{arg}, i, j, k, call, call', store. \ \ i < j < k \ \land
+%           call_{loc} = i \land call'_{loc} = j \\
+%           \land \ store_{loc} = k \ \land \
+%           call.\text{gas} > 2300 \land (\text{interfere? arg} \ call.\text{addr})
+% \end{split}
+% \end{equation*}
+% \begin{equation*}
+% \small
+% \begin{split}
+% \textbf{Approximate query:} \\
+% \neg \forall \ i, k, \exists j, \ \trace.  \ \land
+%           \trace[i] = \trace[k] = \mathsf{call} \land \mathsf{call.gas} > 2300 \implies \\
+%           i < j < k \ \land \ \trace[j] = \mathsf{store} 
+%         %   \land (\mathsf{interfere? \ arg} \ call.\mathsf{addr})
+% \end{split}
+% \end{equation*}
+\begin{lstlisting}[numbers=none,morekeywords={uses,matches,where,interfere,within}]
+uses Transfer $t_1$, $t_2$; Store s; Argument a;
+matches {$t_1$; ~s; $t_2$;} where ($t_1.loc == t_2.loc \land t_2.gas>2300$
+  $\land$ (interfere? a $t_2.recipient$))
+\end{lstlisting}
+
+% \begin{equation*}
+% \small
+% \begin{split}
+% \textbf{Precise query:} \\
+% \neg \forall \ i, k, \exists j, \ \trace.  \ \land
+%           \trace[i] = \trace[k] = \mathsf{call} \land \mathsf{call.gas} > 2300 \implies \\
+%           i < j < k \ \land \ \trace[j] = \mathsf{store} \ \land \ \mathsf{store.token \ge call.token} \\
+%           \land \ \mathsf{(interfere? \ store.token \ call.token)}
+%         %   \land (\mathsf{interfere? \ arg} \ call.\mathsf{addr})
+% \end{split}
+% \end{equation*}
+
+\end{vul}
+\noindent In other words, let trace $\trace$ contains a sequence instructions that include multiple \texttt{transfer} statements that share the same program counter, if there is no \texttt{store} statement between the two \texttt{transfer} functions that has the minimum gas (i.e., 2300), then there may exist a Reentrancy vulnerability.

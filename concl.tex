@@ -1,0 +1,12 @@
+% !TEX root =  main.tex
+\section{Conclusion}\label{sec:concl}
+This paper presented \toolname, a tool for automatic synthesis of adversarial
+contracts that exploit vulnerabilities in a victim smart contract. To make
+synthesis tractable, \toolname introduces \emph{summary-based symbolic
+evaluation}, which enables our tool to perform precise all-paths analysis of
+large real-world contracts, while significantly reducing the number of paths
+that need to be executed symbolically. \toolname also introduces optimizations
+to partition the synthesis search space for parallel exploration. %and to prune infeasible attack candidates earlier. 
+Evaluating \toolname on the entire
+\etherscan data set, we find that it significantly outperforms  state-of-the-art
+analyzers in terms of precision, soundness, and execution time.\looseness=-1

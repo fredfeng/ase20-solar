@@ -1,0 +1,53 @@
+\definecolor{bblue}{HTML}{0064FF}
+\definecolor{rred}{HTML}{C0504D}
+\definecolor{ggreen}{HTML}{9BBB59}
+\definecolor{ppurple}{HTML}{9F4C7C}
+
+\definecolor{b1}{HTML}{BEE9E8}
+\definecolor{b2}{HTML}{188FA7}
+
+\begin{figure}[!t]
+\centering
+\scalebox{0.85}{
+\begin{tikzpicture}
+    \begin{axis}[
+        width  = 8cm,
+        height = 8cm,
+        y=0.0015cm,
+        x=2.8cm,
+        major x tick style = transparent,
+        ybar=2*\pgflinewidth,
+        bar width=24pt,
+        ymajorgrids = true,
+        ylabel = {Number of instructions},
+        ylabel style={yshift=-4mm},
+        symbolic x coords={\batchoverflow,\reentrancy},
+        ytick={0,500,1000,1500,2000,2500,3000},
+        xtick = data,
+        scaled y ticks = false,
+        enlarge x limits=0.6,
+        ymin=0,
+        ymax=3000,
+        legend cell align=left,
+        legend entries={Approximate, Precise},
+        legend style={
+                at={(0.5,1.14)},
+                legend columns=-1,
+                anchor=north,
+        %        column sep=1ex
+        }
+    ]
+    %\hspace*{-2mm}
+        \addplot[style={ggreen,fill=ggreen,mark=none}]
+        coordinates{(\batchoverflow,743)(\reentrancy,451)};
+
+        \addplot[style={ppurple,fill=ppurple,mark=none}]
+        coordinates{(\batchoverflow,2976)(\reentrancy,2087)};
+    \end{axis}
+\end{tikzpicture}
+}
+% \vspace{-0.2in}
+\caption{Average number of instructions evaluated under different settings}
+\vspace{-0.2in}
+\label{fig:eval-oyente}
+\end{figure}

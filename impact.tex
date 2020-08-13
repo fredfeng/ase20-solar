@@ -1,0 +1,79 @@
+\subsection{Impact of Summary-based Symbolic Evaluation}\label{sec:expr}
+% \begin{table}[]
+% % \vspace{-0.3in}
+% \centering
+% \begin{tabular}{|l|l|l|l|l|}
+% \hline
+% \multirow{2}{*}{$S^{\dagger}$-mean} & \multirow{2}{*}{$S^{\diamond}$-mean} & \multicolumn{3}{c|}{\# of Benchmarks Timeout} \\ \cline{3-5} 
+%                     &                      & $S^{\dagger} \land S^{\diamond}$   & $S^{\dagger} - S^{\diamond}$  & $S^{\diamond} - S^{\dagger}$ \\ \hline
+% 8s                   & 35s                    & 1846         & 548        & 17454     \\ \hline
+% \end{tabular}
+%   \caption{Comparison between summary-based ($S^{\dagger}$) and non-summary ($S^{\diamond}$). $S^{\dagger} \land S^{\diamond}$, $S^{\dagger} - S^{\diamond},$ and $S^{\diamond} - S^{\dagger}$ represent number of benchmarks timeout on both, $S^{\dagger}$ only, and $S^{\diamond}$ only, respectively.}
+% %   \vspace{-0.3in}
+%   \label{fig:summary}
+% \end{table}
+
+To understand the impact of our summary-based symbolic evaluation described 
+in Section~\ref{sec:sum} and how are queries of different granularity related to the performance, we run \toolname on the \etherscan data set with different queries. In particular, $\vulnerability$ denotes the approximate query discussed in Section~\ref{sec:vul}, and $\vulnerability^{\diamond}$ corresponds to more precise queries adopted from the previous work~\cite{Hirai17}. Specifically, the more precise queries in $\vulnerability^{\diamond}$ include not only constraints in $\vulnerability$ but also extra constraints that encode the invariant of storage balance. In other words, $\vulnerability^{\diamond} \implies \vulnerability$.
+To speed up the evaluation, for both settings, we enable the
+parallel synthesis optimization discussed in Section~\ref{sec:impl}. 
+%\input{plot-sum.tex}
+% \begin{figure}[t!]
+%   \centering
+%   \includegraphics[scale=0.30]{sum-nosum.pdf}
+% %   \vspace{-0.2in}
+% \caption{Comparison of run times (in seconds) between non-summary (x-axis) and summary-based (y-axis) (log-scale).}
+% % \vspace{-0.2in}
+% \label{fig:plot-sum}
+% \end{figure}
+
+% \input{barchart-inst.tex}
+% \input{barchart-time.tex}
+
+\begin{table}[]
+\begin{tabular}{|l|l|l|l|l|}
+\hline
+\multicolumn{1}{|c|}{\multirow{2}{*}{Statistics}} & \multicolumn{2}{l|}{\reentrancy} & \multicolumn{2}{l|}{\batchoverflow} \\ \cline{2-5} 
+\multicolumn{1}{|c|}{}                         & $\vulnerability$             & $\vulnerability^{\diamond}$             & $\vulnerability$                & $\vulnerability^{\diamond}$               \\ \hline \hline  
+Avg time (seconds)                                          &      9          &    52            &         12         &      67           \\ \hline
+Avg \#instructions      &     451           &    1762            &         743         &      2087           \\ \hline
+FPs                                             &           3\%     &       1\%         &    8\%              &         5\%        \\ \hline
+FNs                                             &         7\%       &          23\%      &   5\%               &       32\%          \\ \hline
+\end{tabular}
+  \caption{Effectiveness of summary-based evaluation under queries of different granularity.}
+%   \vspace{-0.3in}
+  \label{tbl:summary}
+\end{table}
+
+
+Table~\ref{tbl:summary} shows the results of running \toolname with 
+different settings and a time limit of 10 minutes. In particular, for the \reentrancy client, the approximate query $\vulnerability$ discussed in Section~\ref{sec:vul} has an average running time of 9 seconds while a precise query $\vulnerability^{\diamond}$ has to run for 52 seconds on average. Looking into the results closely, the approximate query $\vulnerability$ significantly reduces the size of the summaries. Specifically, $\vulnerability$ evaluates about 451 instructions on average while $\vulnerability^{\diamond}$ has to evaluate 1762 instructions on average. As a result, $\vulnerability^{\diamond}$ generates more false negatives (i.e., 23\% vs. 7\%) because it fails to explore enough search space within the time limit. On the other hand, although $\vulnerability$ is less precise, its false positive rate is very close to the one in $\vulnerability^{\diamond}$ (i.e., 3\% vs. 1\%). In the \batchoverflow client, we observe a similar trend.
+\looseness=-1
+
+% Each dot in the 
+% figure represents the pairwise running time of a specific benchmark under different 
+% settings; a dot near the diagonal indicates that the performance of 
+% two settings is similar. Our summary-based symbolic
+% evaluation significantly outperforms the baseline (i.e., non-summary) in the vast majority of benchmarks.
+% As shown in Table~\ref{fig:summary},  if we exclude the benchmarks that timeout
+% in 10 minutes, the mean time of our summary-based symbolic evaluation is only 8
+% seconds, while it takes 35 seconds without computing the summary. Furthermore,
+% 1846 benchmarks time out for both settings, and only 548 benchmarks time out on
+% $S^{\dagger}$ but not on $S^{\diamond}$. However, without computing the summary,
+% 17454 (i.e., 69.8\%) benchmarks time out. The result confirms that the
+% summary-based technique is key to the efficiency of \toolname.\looseness=-1
+% the running time of each benchmark under two different settings, and 
+% the x-axis and y-axis represent the running time with and without computing 
+% the summary, respectively. In particular, without computing the summary, on average
+% it takes our tool \todo{XX} seconds to solve each benchmark and \todo{YY}
+% benchmarks fail to terminate within a \todo{6} mins timeout. On the other hand, 
+% the performance of our summary-based technique \emph{significantly} outperforms
+% the baseline, and on average it takes only \todo{16} to solve each benchmark
+% and timeouts on \todo{XXX} benchmarks.
+
+\fbox{
+\begin{minipage}{0.9\linewidth}
+{\bf Result for RQ2:}
+Summary-based technique is key to the efficiency of \toolname. In the meantime, the approximate queries enable \toolname to generate smaller summaries, which leads to much better scalability in exchange of a minor loss in precision.
+\end{minipage}
+} \\

@@ -1,0 +1,151 @@
+% !TEX root =  main.tex
+\section{Summary-based Symbolic Evaluation}\label{sec:sum}
+
+Solving the attack synthesis problem involves searching for a concrete program
+$P$ in the space of candidate attacks defined by a symbolic program $\sketch$.
+\toolname delegates this search to an off-the-shelf SMT solver, by using
+symbolic evaluation to reduce the attack synthesis problem to a satisfiability
+query. Given a specification  $(\pstate_0, \vulnerability, \sketch)$,  \toolname
+evaluates $\sketch$ on the state $\pstate_0$ to obtain the state
+$\geval{\sketch}_{\pstate_0}$, and then uses the solver to check the
+satisfiability of the  formula $\exists \vec{v} .
+\vulnerability(\geval{\sketch}_{\pstate_0})$, where $\vec{v}$ denotes the
+symbolic variables in $\sketch$. A model of this formula, if it exists, binds
+every variable in $\vec{v}$ to a concrete value, and so represents a concrete
+attack program $P$ for $\sketch$ that triggers the vulnerability
+$\vulnerability$.\looseness=-1
+\begin{figure}[!t]
+    \centering
+  \begin{minipage}{0.5\linewidth}
+\begin{lstlisting}[linewidth=8cm] 
+(define (get-summary s $\pc$)
+  (match s
+    [transfer(x, y, z) $\sumi{transfer}$($\pstate_S(x)$, $\pstate_S[y]$, $\pstate_S[z]$)@$\pc$]
+    [sstore(x, y)  $\sumi{sstore}$(x, $\pstate_S[y]$)@$\pc$]
+    [_             #f]))
+		\end{lstlisting}
+		\end{minipage}
+		\vspace{-0.1in}
+    \caption{Procedure for summary generation. }
+    \vspace{-0.1in}
+      \label{fig:sum-gen}
+\end{figure}
+But computing $\geval{\sketch}_{\pstate_0}$ is expensive as it relies on
+symbolic evaluation~\cite{rosette}. In particular, evaluating a
+$\mathtt{choose}$ statement in $\sketch$ involves symbolically evaluating each
+function call in that statement. So, for a symbolic program of length $K$, every
+public function in the victim contract must be symbolically executed $K$ times
+on different symbolic arguments. As we will see in section~\ref{sec:eval}, this
+direct approach to evaluating $\sketch$ does not scale to real contracts that
+contain a large number of complex public functions. To mitigate this issue, we
+use a summary-based symbolic evaluation that performs symbolic execution of each
+public method only once. 
+
+Our approach is based on the following insight. An attack program performs a
+sequence of transactions---i.e., method invocations---that manipulate the
+victim's persistent storage and global properties. The transactions that
+comprise an attack exchange data and influence each other's control flow
+exclusively through these two parts of the program state. So, if we can
+faithfully summarize the effects of a public method on the persistent storage
+and global properties, evaluating this summary on the symbolic arguments passed
+to the method is equivalent to symbolically executing the method
+itself.\looseness=-1
+
+\begin{definition}
+A summary $\summary$ in our system is a pair $s@\pc$ where $s$ represents a
+statement that has a side effect on the persistent state (i.e., storage and
+global properties) of a smart contract, and $\pc$ denotes the path condition of
+executing $s$.
+\end{definition}
+
+We generate such faithful method summaries in two steps. First, we evaluate the
+method on a program state $\pstate_S$ that maps every state variable (i.e.,
+persistent storage location, global property, etc.) to a fresh symbolic variable
+of the right type. This step produces a path condition and symbolic inputs for
+each instruction that capture every possible way to reach and execute the
+instruction within the given method. Next, we use the procedure in
+Figure~\ref{fig:sum-gen} to generate the method summary.\footnote{We omit 
+the details of other side-effecting instructions for
+simplicity.\looseness=-1} Given a storage-store instruction \texttt{sstore(x,y)}
+and its path condition, we generate a ``summary sstore" statement (i.e.,
+$\sumi{sstore}$) that takes as input the name of the storage variable (i.e.,
+$x$) and the symbolic expression $\pstate_S[y]$ held in the register $y$. Similarly,
+given a \texttt{call(gas,addr,value)} instruction and path condition, we emit
+its ``summary call" statement (i.e., $\sumi{call}$) that takes as input the
+symbolic expressions of the instruction's gas consumption, recipient address,
+and amount of cryptocurrency, respectively. All other instructions are omitted
+from the summary since they have no effect on the persistent state. By
+construction, our summary therefore precisely  captures all of the method's
+effects on the persistent state, and the summaries are polynomially-sized as guaranteed by Rosette's symbolic evaluator~\cite{rosette}.\looseness=-1
+
+\begin{example}
+Figure~\ref{fig:sum-interp}c shows the summary of the program in
+Figure~\ref{fig:sum-interp}b. Using the rule in Figure~\ref{fig:sum-gen}, our
+tool summarizes the side effects of the \texttt{call} and \texttt{sstore}
+instructions at lines 2 and 3, respectively.  The remaining instructions are
+omitted from the summary because they have no persistent side effects.\looseness=-1
+\end{example}
+
+Given a method summary and a program state $\pstate$, we use the procedure in
+Figure~\ref{fig:sum-inter} to reproduce the effects of executing the method
+symbolically on $\pstate$ as follows. Recall that we generate the summary by
+executing the method on a fully symbolic state $\pstate_S=\{x_1\mapsto
+v_1,\ldots, x_n\mapsto v_n\}$, so every path
+condition and symbolic expression in the summary is given in terms of the
+symbolic variables $v_1,\ldots,v_n$. Our summary interpretation procedure works by
+substituting each $v_i$ in an instruction's path condition and inputs with its
+corresponding value in $\pstate$, i.e., $\pstate[x_i]$. The resulting instruction summary
+$s_{\pstate}@\pc_{\pstate}$ is therefore expressed in terms of $\pstate$, so applying its
+side effects $s_{\pstate}$ under the path condition $\pc_{\pstate}$ is equivalent to
+executing the instruction $s$ in the original method on the state $\pstate$. 
+Since we interpret every instruction in the summary in this way, the
+combined effect on the persistent state is equivalent to executing the original
+method symbolically on $\pstate$.\looseness=-1
+
+% Because our rules
+% for summary generation preserve each instruction's data- and
+% control-dependencies (in the symbolic inputs and path condition, respectively),
+% executing the summary in this way has the same effect on the persistent state as
+% executing the original method symbolically on $E$.\looseness=-1
+
+%Once our system obtains the summary of the original program, it will further apply the 
+%abstract interpretation procedure in Figure~\ref{fig:sum-inter} to evaluate its side effects
+%over the storage states, using the same operational semantics in Figure~\ref{fig:sem}. The only difference is,
+%we also have to stitch the original path condition $\pc$ to its corresponding statement to 
+%soundly model the control dependency for each instruction.
+\begin{example}
+Figure~\ref{fig:sum-interp}d shows an example for interpreting the summary in
+Figure~\ref{fig:sum-interp}c by applying the procedure in
+Figure~\ref{fig:sum-inter}. Specifically, given an environment $\pstate$ and the
+\texttt{transfer} summary at line 2 in Figure~\ref{fig:sum-interp}c, we first
+generate an \texttt{if} statement guarded by the path condition $\pc$ in $\pstate$, 
+then in the body of the \texttt{if} statement we symbolically
+evaluate the \texttt{call} statement in the environment $\pstate$.
+\end{example}
+
+
+%Thanks to the soundness of our summaries, we can state the following theorem:
+%\begin{theorem}
+% Suppose we have a program $\sketch$, its corresponding summary $\sumi{\sketch}$,
+% initial state $\pstate_0$, states $\pstate_1$ and $\pstate_2$ by executing $\sketch$ and 
+% $\sumi{\sketch}$, respectively, then if a query $\query$ holds on $\pstate_1$, it will
+% also hold on $\pstate_2$.
+%\end{theorem}
+
+\begin{figure}[!t]
+  \centering
+  \begin{minipage}{0.5\linewidth}
+\begin{lstlisting}[linewidth=8cm] 
+(define (interpret-summary $s$@$\pc$ ${\pstate}$) 
+  (define $s_{\pstate}$@$\pc_{\pstate}$ (substitute $s$@$\pc$ ${\pstate}$))
+  (match $s_{\pstate}$
+    [$\sumi{transfer}(x_{\pstate}, y_{\pstate}, z_{\pstate})$  (when $\pc_{\pstate}$ transfer($x_{\pstate}$, $y_{\pstate}$, $z_{\pstate}$))]
+    [$\sumi{sstore}(x, y_{\pstate})$     (when $\pc_{\pstate}$ sstore(x, $y_{\pstate}$))]
+    [_  no-op]))
+\end{lstlisting}
+\end{minipage}
+\vspace{-0.1in}
+		\caption{Procedure for summary interpretation}
+		\vspace{-0.1in}
+      \label{fig:sum-inter}
+\end{figure}

@@ -1,0 +1,70 @@
+% !TEX root =  main.tex
+\section{Background}\label{sec:background}
+% This section briefly reviews the background on blockchains and smart contracts.
+We first review necessary background on smart contracts.
+
+% \subsection{Blockchain and Ethereum}
+% Blockchain, invented by Satoshi Nakamoto in 2008, is a distributed public ledger that stores transactions between different parties. A blockchain is comprised of a growing list of blocks, each of which contains the hash of the previous block, a timestamp when the block is appended, and transaction value. Due to the decentralized consensus protocol, each block is inherently resistant to modification once it is created.\looseness=-1 
+
+% While Satoshi's original blockchain proposes a peer to peer e-cash system that offers secure transactions, the Ethereum~\cite{yellowpaper} blockchain provides a more powerful distributed computing platform that can execute custom code in the form of \emph{smart contracts}. In addition to the crypto tokens (i.e., Ether) that are transferred among parties during a transaction, Ethereum also implements a \emph{gas} scheme (explained in Section~\ref{sec:abi}) to incentivize \emph{miners} who perform the computationally expensive creation of new blocks. 
+% Gas is simply a small amount of cryptocurrency paid to the miners to perform the computation. A user specifies the gas along with the executable code (i.e., smart contracts) during a transaction.
+
+% \subsection{Smart Contract}
+\paragraph{Smart Contract.}Smart contracts are programs that are stored and
+executed on the blockchain. They are created through the transaction system on
+the blockchain and are immutable once deployed. Each smart contract is
+associated with a unique 160-bit address; a private persistent storage; a
+certain amount of cryptocurrency, expressed as a balance (i.e., Ether in
+Ethereum) held by the contract; and a piece of executable code that fulfills
+complex computations to manipulate the storage and balance. The code is
+typically written in a high-level Turing-complete programming language such as
+Serpent~\cite{serpent}, Vyper~\cite{vyper}, and Solidity~\cite{solidity}, and
+then compiled to the Ethereum Virtual Machine (EVM) bytecode~\cite{yellowpaper},
+a low-level stack-based language. For instance, Figure~\ref{fig:motivate} shows
+two smart contracts written in the Solidity programming language~\cite{solidity}.
+
+% \subsection{ABI and Transactions}\label{sec:abi}
+\paragraph{Application Binary Interface.}
+In the Ethereum ecosystem, smart contracts communicate with each other using the
+Contract Application Binary Interface (ABI), which defines the signatures of
+public functions provided by the hosted contract. While ABI offers a flexible
+mechanism for communication, it also creates an attack surface for exploits that
+use  the ABI of a given smart contract. 
+%We will elaborate on this in the following section. For instance, Figure~\ref{fig:attack-abi} shows the ABI for the smart contract in Figure~\ref{fig:attack-vic}.
+% \begin{table}[]
+% \centering
+% \begin{tabular}{|l|l|}
+% \hline
+% ...         & ...                                                                \\ \hline
+% From:       & 0x7d5c8c59837357e541bc7d87dee53fcbba55ba65                         \\ \hline
+% To:         & 0x8811fffcfc266844e8c36418389f7cda76c77ab7 \\ \hline
+% Value:      & 0.05 Ether                                                         \\ \hline
+% Gas Limit:  & 31602                                                              \\ \hline
+% Input Data: & 0x687474703a2f2f6c6f63616c686f73743a38353435                       \\ \hline
+% \end{tabular}
+% \caption{A sample transaction~\cite{sample-trans} obtained from \etherscan}
+% \label{fig:trans-sample}
+% \end{table}
+
+% All interactions between smart contracts are fulfilled 
+% by transactions. 
+% Table~\ref{fig:trans-sample} shows a sample transaction obtained
+% from \etherscan. Here, the important fields are \texttt{From},
+% \texttt{To}, \texttt{Value}, \texttt{Gas Limit}, and \texttt{Input Data}. In 
+% particular, \texttt{From} and \texttt{To} represent the sender and recipient, respectively.
+% \texttt{Value} denotes the amount transferred from one smart contract to another. 
+% \texttt{Input Data} contains the function's signature (obtained from the ABI) and its arguments. 
+% Finally, the \texttt{Gas Limit} field specifies the amount of cryptocurrency which a miner 
+% gets for conveying the transaction. The Ethereum protocol~\cite{yellowpaper} defines
+% the gas cost for each bytecode instruction. For instance, an integer division operation 
+% costs 5 units of gas while a store operation on the storage can cost up to 20000.
+% As we will see in Section~\ref{sec:eval}, 
+% the gas mechanism plays a key role in several different types of vulnerabilities.
+
+
+% \subsection{Threat Model}
+\paragraph{Threat Model.} To synthesize an adversarial contract,  we assume that
+we can obtain the victim contract's bytecode and the ABI specifying its public
+methods. To confirm an adversarial contract is indeed an exploit, we must also
+be able to invoke public methods by submitting transactions over the Ethereum
+Blockchain. These requirements are easy to satisfy in practice.

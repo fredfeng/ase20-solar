@@ -1,0 +1,48 @@
+\section{Expressiveness of \toolname}\label{sec:express}
+To understand the expressiveness of our tool, we encoded the common vulnerabilities in 
+smart contracts described in prior work~\cite{attack-time,smart-sec} and on social 
+media~\cite{batch-news}. 
+In particular, Table~\ref{tbl:expr} summarizes the expressiveness of mainstream tools
+for smart contract security, ordered by publish date. Note that our tool  
+ supports not only well-known vulnerabilities such as Reentrancy, Timestamp Dependency,
+ and Arithmetic operations (i.e., over/underflow), but also recent attacks
+ such as the \batchoverflow vulnerability discussed 
+ in Section~\ref{sec:overview}. Prior tools express 
+ a portion of these vulnerabilities. For instance, the \oyente~\cite{oyente} 
+ tool, which is also based on symbolic execution, does not support vulnerabilities such as 
+ unchecked calls and out-of-gas-DoS. Static analysis tools such as 
+ Securify~\cite{securify} and \madmax~\cite{madmax} do not support complex arithmetic vulnerabilities.
+Most importantly, unlike \toolname, 
+ none of them can generate exploits for vulnerabilities. The \teether and the 
+ \contractfuzz tools can automatically generate 
+ exploits, but their systems only support a small class of vulnerabilities.
+
+ There are some vulnerabilities that our tool does not support well. 
+ For instance, a Transaction-Ordering Dependency (TOD) is a race condition 
+ vulnerability, and exploiting it requires synthesizing \emph{a pair of programs}
+ that exhibit the race. In the future, we plan to explore \emph{relational synthesis}
+ to handle attacks that require multiple programs. Another source of limitation
+ is denial-of-service (DoS) attacks that involve loops, which our tool unrolls during 
+ symbolic execution, and the unrolling bound may not be large enough to
+ trigger the vulnerability.
+
+
+\begin{table*}[]
+\centering
+\scriptsize
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|c|}
+\hline
+\multicolumn{1}{|c|}{\multirow{2}{*}{Tool}} & \multicolumn{1}{l|}{\multirow{2}{*}{\begin{tabular}[c]{@{}l@{}}Generate\\ Exploit?\end{tabular}}} & \multicolumn{8}{c|}{Common Vulnerabilities}        \\ \cline{3-10} 
+\multicolumn{1}{|c|}{}                      & \multicolumn{1}{l|}{}                                                                             & \multicolumn{1}{l|}{Reentrance} & \multicolumn{1}{l|}{Arithmetic} & \multicolumn{1}{l|}{DoS} & \multicolumn{1}{l|}{\begin{tabular}[c]{@{}l@{}}Bad \\ Random\end{tabular}} & \multicolumn{1}{l|}{Timestamp} & \multicolumn{1}{l|}{TOD} & \multicolumn{1}{l|}{\begin{tabular}[c]{@{}l@{}}Unchecked \\ Calls\end{tabular}} & \multicolumn{1}{l|}{\begin{tabular}[c]{@{}l@{}}Attack \\ Control\end{tabular}}  \\ \hline
+\oyente    & \LEFTcircle      & \cmark       &\cmark         &               &         & \cmark     & \LEFTcircle       &               &                           \\ \hline
+Mythril    &  \LEFTcircle     & \cmark       & \cmark        &               &         & \cmark     & \LEFTcircle       & \cmark        & \cmark                    \\ \hline
+Zeus       &                  & \cmark       & \cmark        &               &         & \cmark     & \LEFTcircle       & \cmark        & \cmark                     \\ \hline
+\teether    & \cmark           &              &               &               &         &            &                   &               & \cmark                     \\ \hline
+Securify   &                  & \cmark       &               &               &         & \cmark     & \LEFTcircle       & \cmark        & \cmark                     \\ \hline
+\madmax    &                  &              & \LEFTcircle   & \LEFTcircle   &         &            &                   &               &                            \\ \hline
+\contractfuzz & \cmark       & \cmark       &               &               &\cmark   & \cmark     & \LEFTcircle       &               &                             \\ \hline
+\toolname  & \cmark           & \cmark       & \cmark        & \LEFTcircle   & \cmark  & \cmark     & \LEFTcircle       & \cmark        & \cmark                      \\ \hline
+\end{tabular}
+\caption{A Comparison of Existing Tools (\oyente~\cite{oyente}, Mythril~\cite{mythril}, Zeus~\cite{zeus}, \teether~\cite{teether}, Securify~\cite{securify}, \madmax~\cite{madmax}, and ContractFuzzer~\cite{contractfuzzer}) for Smart Contract (Order by publish date). \LEFTcircle \ represents limited support.}. 
+\label{tbl:expr}
+\end{table*}

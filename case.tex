@@ -1,0 +1,36 @@
+\subsection{A case study on the BatchOverflow vulnerability}\label{sec:case}
+
+To evaluate whether \toolname can express and discover new vulnerabilities in real world
+smart contracts, we conduct a case study on the recent \batchoverflow
+vulnerability. Exploits
+due to this vulnerability have resulted in the creation of trillions of invalid
+Ethereum Tokens in 2018~\cite{batch-news}, causing major exchanges to temporary
+halt until all tokens could be reassessed. Note that generating exploits for
+this vulnerability is quite challenging as it requires the tool to reason about
+the combination of arithmetic operations, interference, and the read-write
+semantics of the storage system in Solidity. 
+% For instance, existing tools such
+% as \oyente and \madmax~\cite{madmax} will simply mark a large number of arithmetic
+% operations as \emph{potentially vulnerable}, and it turns out that most of the
+% alarms are not exploitable.
+
+Similar to our previous experiment, we first encode the \batchoverflow vulnerability
+(Section~\ref{sec:vul}) in our query language and then run our tool on the 
+\etherscan data set. In total, \toolname flags 16 vulnerable
+contracts. To verify that the exploits are effective, we setup a private
+blockchain using the Geth~\cite{geth} framework where we can run exploits on the
+vulnerable contracts. We confirmed that 9 exploits are valid. 
+The infeasible attacks come from the incompleteness of the query 
+as well as imprecise control flow graphs from the Vandal decompiler. 
+Running \teether on these 9 vulnerable contracts, we find 
+that it fails to generate their exploits.
+
+% \todo{To evaluate the effectiveness of \toolname on vetting the \batchoverflow vulnerability, we compare \toolname against \teether~\cite{teether} tool, the most recent
+% tool using dynamic symbolic execution for generating exploits that would enable
+% the attacker to control the money transactions of a victim contract. In
+% particular, the \teether tool looks for so-called \emph{critical instructions}
+% (i.e., \texttt{call}, \texttt{selfdestruct}, etc.) that include recipients' addresses, 
+% which can be manipulated by the attacker. In the end, \teether takes an average of 31 seconds to analyze the \etherscan data set but fails to generate exploits for those 9 vulnerable contracts. The false negative rate in \teether is caused by  
+% attack programs that require more than three method calls, or victim programs with over 3000 lines of source code with complex control flow.
+% As a result, the \teether tool fails to explore sufficiently many \emph{concrete traces} to 
+% find the exploits.}  

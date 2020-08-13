@@ -1,0 +1,112 @@
+% This is samplepaper.tex, a sample chapter demonstrating the
+% LLNCS macro package for Springer Computer Science proceedings;
+% Version 2.20 of 2017/10/04
+%
+\documentclass[sigconf,review,anonymous]{acmart}
+%
+% \usepackage{subcaption} %% For complex figures with subfigures/subcaptions
+                        %% http://ctan.org/pkg/subcaption
+
+%% self-defined packages
+\usepackage{xspace}
+\usepackage{stmaryrd}
+\usepackage{comment}
+
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\usepackage{xcolor}
+\usepackage{listings}
+\lstset{escapeinside={(*}{*)},mathescape}
+
+\usepackage{multirow}
+\usepackage{syntax} 
+
+\usepackage{xparse}
+\NewDocumentCommand{\codeword}{v}{%
+% \texttt{\textcolor{blue}{#1}}%
+  \texttt{#1}%
+}
+\lstset{language=Python,keywordstyle={\bfseries \color{blue}}}
+
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+
+\usepackage{threeparttable}
+\usepackage{proof}
+\usepackage{enumitem}
+\usepackage{ulem}
+\normalem
+
+\usepackage{tikz}
+\usetikzlibrary{positioning,shapes,arrows}
+\usetikzlibrary{patterns}
+\usepackage{pgfplots}
+\newtheorem{vul}{Vulnerability}
+% Used for displaying a sample figure. If possible, figure files should
+% be included in EPS format.
+%
+% If you use the hyperref package, please uncomment the following line
+% to display URLs in blue roman font according to Springer's eBook style:
+% \renewcommand\UrlFont{\color{blue}\rmfamily}
+\input{macros.tex}
+
+\begin{document}
+%
+\title{Summary-Based Symbolic Evaluation for Smart Contracts}
+%
+%\titlerunning{Abbreviated paper title}
+% If the paper title is too long for the running head, you can set
+% an abbreviated paper title here
+%
+% \author{First Author\inst{1}\orcidID{0000-1111-2222-3333} \and
+% Second Author\inst{2,3}\orcidID{1111-2222-3333-4444} \and
+% Third Author\inst{3}\orcidID{2222--3333-4444-5555}}
+%
+% \authorrunning{F. Author et al.}
+% First names are abbreviated in the running head.
+% If there are more than two authors, 'et al.' is used.
+%
+% \institute{Princeton University, Princeton NJ 08544, USA \and
+% Springer Heidelberg, Tiergartenstr. 17, 69121 Heidelberg, Germany
+% \email{lncs@springer.com}\\
+% \url{http://www.springer.com/gp/computer-science/lncs} \and
+% ABC Institute, Rupert-Karls-University Heidelberg, Heidelberg, Germany\\
+% \email{\{abc,lncs\}@uni-heidelberg.de}}
+%
+\input{abstract.tex}
+
+\maketitle              % typeset the header of the contribution
+%
+
+%% Abstract
+%% Note: \begin{abstract}...\end{abstract} environment must come
+%% before \maketitle command
+
+%
+%
+%
+
+\input{intro}
+\input{background.tex}
+\input{overview.tex}
+\input{problem.tex}
+\input{sum-interp.tex}
+\input{impl.tex}
+\input{eval.tex}
+\input{related.tex}
+\input{concl.tex}
+%
+% ---- Bibliography ----
+%
+% BibTeX users should specify bibliography style 'splncs04'.
+% References will then be sorted and formatted in the correct style.
+%
+\bibliographystyle{splncs04}
+% \bibliography{mybibliography}
+%
+\bibliography{main}
+\end{document}

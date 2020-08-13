@@ -1,0 +1,305 @@
+\subsection{Smart Contract Language}\label{sec:lang}
+
+Figure~\ref{fig:grammar} shows the core features of our intermediate language
+for smart contracts. This language is a superset of the EVM language. It includes
+standard EVM bytecode instructions such as assignment (\texttt{x := e}), memory operations
+(\texttt{mstore,mload}), storage operations (\texttt{sstore,sload}), hash
+operation (\texttt{sha3}), sequential composition (\texttt{$s_1;s_2$}),
+conditional (\texttt{jumpi}) and unconditional jump (\texttt{jump}). It also
+includes the EVM instructions specific to smart contracts: \texttt{transfer}
+denotes all functions that send tokens between different addresses, \texttt{balance} accesses the current account
+balance, and \texttt{selfdestruct} terminates a contract and transfers its
+balance to a given address. Finally, our language extends EVM with features that
+facilitate symbolic evaluation, including \emph{symbolic variables} (introduced
+by \texttt{def-sym}) and \emph{symbolic expressions} (obtained by operating on
+symbolic variables) whose concrete values will be determined by an off-the-shelf
+SMT solver~\cite{NiemetzPreinerBiere-JSAT15}.
+
+\begin{figure}[!t]
+%   \begin{minipage}{1.0\linewidth}
+    \setlength{\grammarparsep}{0em}
+    \begin{grammar}
+    \small
+<var>  ::= \texttt{def-sym} id $\tau$  \ \ where 
+$\tau\in\{\textbf{boolean}, \textbf{number}\}\quad$
+
+<pc>   ::= <const> | <var>
+
+<expr> ::= <const> | <var> | <expr> $\oplus$ <expr> \\
+($\oplus\in\{+, -, \times, /, \vee, \wedge, ...\}$)
+
+<stmt> ::=  <var> := <expr> 
+  \alt <var> := \textbf{mload} <var> | \textbf{mstore} <var> <var>
+  \alt <var> := \textbf{sload} <var> | \textbf{sstore} <var> <var>
+  \alt <var> := \{\textbf{balance}, \textbf{gas}, \textbf{address} \}
+
+<stmts> ::= <stmt> | <stmt>; <stmts> | \textbf{sha3} <var> <var>
+\alt \textbf{jumpI} <pc> <expr> | \textbf{jump} <pc> | \textbf{no-op}
+\alt \textbf{transfer} <var> <var> <...> | \textbf{selfdestruct} <var>
+
+<param> ::= <var> 
+
+<params> ::= <param> | <param>, <params> 
+
+<prog> ::= $\lambda$<params>. <stmts> 
+\end{grammar}
+% \end{minipage}
+\vspace{-0.2in}
+\caption{Intermediate language for smart contract}
+\vspace{-0.1in}
+\label{fig:grammar}
+\end{figure}
+
+
+% \begin{figure}
+
+  
+% \begin{prooftree}
+% \AxiomC{$s = \textbf{no-op}$}
+% \LeftLabel{\texttt{no-op}}
+% \UnaryInfC{$\pstate \vdash s: \pstate'[\text{pc++}]$}
+% \end{prooftree}
+% \vspace{0.05in}
+
+% \begin{prooftree}
+% \AxiomC{$s=(\textbf{jumpi } d \ e)$}
+% \noLine
+% \UnaryInfC{$\pstate \vdash e: v$}
+% \AxiomC{$i=(v=0)?(pc+1):d$}
+% \noLine
+% \UnaryInfC{$\pstate' = \pstate[x\gets v,pc\gets i]$}
+% \LeftLabel{\texttt{jmp}}
+% \BinaryInfC{$\pstate \vdash s: \pstate'$}
+% \end{prooftree}
+% \vspace{0.05in}
+
+% \begin{prooftree}
+% \AxiomC{$s = (param := \textbf{def-sym}(e,\tau))$}
+% \AxiomC{$v = |(e,\tau)|$}
+% \noLine
+% \UnaryInfC{$\pstate' = \pstate[param\gets v]$}
+% \LeftLabel{\texttt{sym}}
+% \BinaryInfC{$\pstate \vdash s: \pstate', v$}
+% \end{prooftree}
+% \vspace{0.05in}
+
+% \begin{prooftree}
+% \AxiomC{$s = (x := e)$}
+% \AxiomC{$\pstate \vdash e: v$}
+% \AxiomC{$\pstate' = \pstate[x\gets v]$}
+% \LeftLabel{\texttt{assign}}
+% \TrinaryInfC{$\pstate \vdash s: \pstate'[\text{pc++}], v$}
+% \end{prooftree}
+% \vspace{0.05in}
+
+% \begin{prooftree}
+% \AxiomC{$s = (x:=e_1 \oplus e_2)(\oplus \in \{+,-,/,\times\})$ }
+% \noLine
+% \UnaryInfC{$\pstate \vdash e_1: v_1$}
+% \noLine
+% \UnaryInfC{$\pstate \vdash e_2: v_2$}
+% \AxiomC{$v=v_1 \oplus v_2$}
+% \noLine
+% \UnaryInfC{$\pstate'[x\gets v]$}
+% \LeftLabel{\texttt{biop}}
+% \BinaryInfC{$\pstate \vdash s: \pstate'[\text{pc++}], v$}
+% \end{prooftree}
+% \vspace{0.05in}
+
+% \begin{prooftree}
+% \AxiomC{$s = (s_1;s_2)$ }
+% \AxiomC{$\pstate \vdash s_1: \pstate_1, v_1$}
+% \noLine
+% \UnaryInfC{$\pstate_1\vdash s_2: \pstate_2, v_2$}
+% \LeftLabel{\texttt{seq}}
+% \BinaryInfC{$\pstate \vdash s: \pstate_2, v_2$}
+% \end{prooftree}
+% \vspace{0.05in}
+
+% \begin{prooftree}
+% \AxiomC{$s = (x:=\textbf{sload } e)$ }
+% \noLine
+% \UnaryInfC{$\pstate \vdash e: \mu$}
+% \AxiomC{$\pstate \vdash \mu: v$}
+% \noLine
+% \UnaryInfC{$\pstate'[x\gets v]$}
+% \LeftLabel{\texttt{sload}}
+% \BinaryInfC{$\pstate \vdash s: \pstate'[\text{pc++}],v$}
+% \end{prooftree}
+% \vspace{0.05in}
+
+% \begin{prooftree}
+% \AxiomC{$s = (\textbf{sstore } \mu \ e)$ }
+% \noLine
+% \UnaryInfC{$\pstate \vdash e: v$}
+% \AxiomC{$\pstate'[\mu\gets v]$}
+% \LeftLabel{\texttt{sstore}}
+% \BinaryInfC{$\pstate \vdash s: \pstate'[\text{pc++}]$}
+% \end{prooftree}
+% \vspace{0.05in}
+
+% \begin{prooftree}
+% \AxiomC{$s = (r_l:=\textbf{call }(e_1 \ e_2 \ e_3))$ }
+% \noLine
+% \UnaryInfC{$\pstate \vdash e_1: v_1$}
+% \noLine
+% \UnaryInfC{$\pstate \vdash e_2: v_2$}
+% \AxiomC{$\pstate \vdash e_3: v_3$}
+% \noLine
+% \UnaryInfC{$v=\textbf{call}_i(v_1,v_2,v_3)$}
+% \noLine
+% \UnaryInfC{$\pstate'[r_l\gets v]$}
+% \LeftLabel{\texttt{call}}
+% \BinaryInfC{$\pstate \vdash s: \pstate'[\text{pc++}], r_l$}
+% \end{prooftree}
+% \vspace{0.05in}
+
+% \begin{prooftree}
+% \AxiomC{$s = (x:= \textbf{sha3 }m \ e)$ }
+% \noLine
+% \UnaryInfC{$\pstate \vdash m: v_1$}
+% \noLine
+% \AxiomC{$\pstate \vdash e: v_2$}	
+% \noLine
+% \UnaryInfC{$v=\textbf{sha3}_i(v_1,v_2)$}
+% \noLine
+% \UnaryInfC{$\pstate'[x\gets v]$}
+% \LeftLabel{\texttt{sha}}
+% \BinaryInfC{$\pstate \vdash s: \pstate'[\text{pc++}],v$}
+% \end{prooftree}
+% \caption{Operational semantics for our language 
+% in Figure~\ref{fig:grammar}}
+% \label{fig:sem}
+% \end{figure}
+
+% We define the semantics of the language operationally, as 
+% shown in Figure~\ref{fig:sem}. 
+We define the operational semantics of each statement in Figure~\ref{fig:grammar} 
+based on the standard defined by the EVM yellow paper~\cite{evm-yellow}. 
+The semantics is lifted to work on symbolic values in the standard way~\cite{rosette}.
+The meaning of a statement 
+is given by a \emph{state transition} rule that specifies the statement's 
+effect on the \emph{program state}. We define states and transitions as follows. 
+%
+\begin{definition}{{(\bf Program State)}}
+The \emph{Program State} $\pstate$ consists of a stack $E$, memory $M$,
+ persistent storage $S$, global properties (e.g., balance, address, timestamp)
+ of a smart contract, and the program counter \texttt{pc}. We use $e_i$, $m_i$,
+ and $\mu_i$ to denote variables from the stack, memory, and storage,
+ respectively. 
+\end{definition}
+%
+\noindent A program state also includes a model of the gas system in EVM, but we
+omit this part of the semantics to simplify the presentation. If a state maps a
+variable to a symbolic expression, we call it a \emph{symbolic state}.  
+%
+\begin{definition}{{(\bf State transition over statement $s$)}}
+  A \emph{State Transition} $\transition$ over a statement $s$ is
+  denoted by a judgment of the form $\pstate \vdash s: \pstate', v$. 
+  The meaning of this judgment is the following: assuming we successfully execute $s$ under program 
+  state $\pstate$, it will result in value $v$ and the new state is $\pstate'$. 
+  %We use $\pstate \vdash s: \bot$ to indicate failure.
+\end{definition}
+
+% Most of the rules in Figure~\ref{fig:sem} specify the standard semantics of EVM 
+% instructions. For example, the \texttt{biop} rule describes the meaning of binary operations: 
+% it first looks up the values (concrete or symbolic) of the 
+% operands in the current program state $\pstate$, applies the binary operator to those
+% values (i.e., $v_1, v_2$), and then binds the result to the target variable, 
+% increases the program counter, and produces a new program state $\pstate'$. 
+% The  \texttt{sstore}, \texttt{sload}, \texttt{jmp}, and \texttt{seq} rules are also standard.
+
+
+% The  \texttt{sym},  \texttt{sha3}, and  \texttt{call} rules, on the other hand, are 
+% tailored for (efficient) symbolic evaluation. 
+% The \texttt{sym} rule introduces symbolic values into the program state. 
+% The construct $|(e,\tau)|$ denotes a fresh symbolic variable $e$ of type $\tau$,
+% which is bound to the \texttt{def-sym} parameter in the new program state
+% $\pstate'$. Here, we do not increase the program counter as the symbolic binding
+% is not an EVM instruction.
+% The \texttt{sha3} and \texttt{call} instructions are part of EVM, but we overapproximate their 
+% semantics with  \emph{uninterpreted functions} to produce more tractable vulnerability queries. 
+
+% The standard semantics of the \texttt{sha3} instruction is to obtain a memory 
+% location by computing a Keccak-256 hash over a variable length data and its offset.
+
+% However, applying hashing functions to symbolic arguments results in hard-to-solve queries. 
+% The \texttt{sha3} rule therefore uses an uninterpreted function, denoted by $\texttt{sha3}_i$,  
+% to model the original hash function. 
+%In particular, we 
+%first look up the values of the arguments, apply $\texttt{sha3}_i$ to them, 
+%and bind the result to the variable on the left hand side.
+
+% As mentioned earlier, the \texttt{call} instruction is used to initiate 
+% a transaction with another contract, whose address is specified as an argument.
+% The \texttt{call} rule uses an 
+% uninterpreted function, denoted by $\texttt{call}_i$, to model the effect of the \texttt{call} instruction. 
+% Note that the rule also records the return value of each \texttt{call} using a special variable 
+% $r_l$ in $\pstate$, where $l$ is the location of the \texttt{call} command. 
+% This handling of \texttt{call} instructions is key to our summary-based symbolic evaluation, as explained 
+% in Section~\ref{sec:sum}.\looseness=-1
+
+%Finally, the \texttt{seq} rule is used to compose the program state for multiple
+%statements, and we recursively apply the rule of each individual statement 
+%and return the program state of the last statement.
+
+    % \begin{figure}
+    %   \lstinputlisting[language=Java,linewidth=7cm]{EubChainIco.sol}
+    %   \caption{A Smart Contract written in Solidity.}
+    %   \label{fig:code-sum}
+    % \end{figure}
+\begin{example}
+Figure~\ref{fig:sum-interp}a shows a smart contract written in Solidity. To analyze this 
+contract, \toolname first translates it to the program in Figure~\ref{fig:sum-interp}b,
+using the intermediate language in Figure~\ref{fig:grammar}. The resulting program is then 
+evaluated symbolically in an environment $\pstate$ that binds \texttt{_amount} to a 
+fresh symbolic number. % using \todo{the operational semantics of EVM bytecode defined by the yellow paper~\cite{evm-yellow}.}
+% in Figure~\ref{fig:sem}. 
+For instance, after executing line 2 in 
+Figure~\ref{fig:sum-interp}b, register \texttt{r1} holds a symbolic value represented 
+by $\pstate[\mathtt{\_amount}] - 1$. Since \toolname does not model the event 
+system in Solidity, we turn the corresponding instructions (e.g., line 7 in Figure~\ref{fig:sum-interp}b) 
+into \texttt{no-op}s.\looseness=-1
+\end{example}
+
+\begin{definition}{{(\bf Abstract execution trace)}}
+An abstract execution trace $\trace$ contains a list of events (i.e., statements) that are of interest. Each event has an event type representing the type of statement, and a list
+of attributes.
+\end{definition}
+    \begin{figure}[t!]
+\begin{lstlisting}[title={(a) Solidity program}]
+  require(_amount > 0);
+  vesting.amount = _amount.sub(1);
+  transfer(msg.sender,_to,vesting.amount);
+  uint256 v1 = _amount - 15;
+  uint256 wei = v1;
+  uint t1 = vesting.startTime;
+  emit VestTransfer(msg.sender, _to, wei, t1, _);
+\end{lstlisting}
+\begin{lstlisting}[title={(b) Symbolic evaluation}]
+  assert(_amount > 0);
+  r1 (*\textbf{:=}*) _amount - 1;
+  (*\textbf{sstore}*)(vesting.amount, _amount - 1);
+  (*\textbf{transfer}*)(msg.sender, _to, _amount - 1);
+  r2 (*\textbf{:=}*) amount - 15;
+  r3 (*\textbf{:=}*) amount - 15;
+  r4 (*\textbf{:=}*) (*\textbf{sload}*)(vesting.startTime);
+  (*\textbf{no-op}*);
+\end{lstlisting}
+\begin{lstlisting}[title={(c) Summary extraction}]
+  $\sumi{sstore}(\mathtt{vesting.amount}, \pstate_S[\mathtt{\_amount}] - 1)@(\pstate_S[\mathtt{\_amount}]>0)$;
+  $\sumi{transfer}(\pstate_S[\mathtt{msg.sender}], \pstate_S[\mathtt{\_to}], \pstate_S[\mathtt{\_amount}] - 1)@(\pstate_S[\mathtt{\_amount}]>0)$;
+\end{lstlisting}
+\begin{lstlisting}[title={(d) Summary interpretation}]
+  if ($\pstate[\mathtt{\_amount}] > 0$) (*\textbf{sstore}*)$(\mathtt{vesting.amount}, \pstate[\mathtt{\_amount}] - 1)$;
+  if ($\pstate[\mathtt{\_amount}] > 0$) (*\textbf{transfer}*)$(\pstate[\mathtt{msg.sender}], \pstate[\mathtt{\_to}], \pstate[\mathtt{\_amount}] - 1)$;
+\end{lstlisting}
+    \caption{\small From Standard to Summary-Based Symbolic Evaluation\looseness=-1}
+    \label{fig:sum-interp}
+    \end{figure}
+
+% With slight abuse of notation, we write $\overset{\#}{\pstate}$ 
+% to denote the statement that leads to program state $\pstate$.
+% That is, $\overset{\#}{\pstate} = s$ if 
+% \[
+% \exists \pstate_1. \pstate_1 \vdash s:\pstate \]
