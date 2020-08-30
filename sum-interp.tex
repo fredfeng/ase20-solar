@@ -79,14 +79,29 @@ construction, our summary therefore precisely  captures all of the method's
 effects on the persistent state, and the summaries are polynomially-sized as guaranteed by Rosette's symbolic evaluator~\cite{rosette}.\looseness=-1
 
 \begin{example}
-Figure~\ref{fig:sum-interp}c shows the summary of the program in
-Figure~\ref{fig:sum-interp}b. Using the rule in Figure~\ref{fig:sum-gen}, our
+Recall that we introduce the following code snippet in Figure~\ref{fig:sum-interp}b:
+\begin{lstlisting}[linewidth=9cm,frame=none, numbers=none]
+  assert(_amount > 0);
+  r1 (*\textbf{:=}*) _amount - 1;
+  (*\textbf{sstore}*)(vesting.amount, _amount - 1);
+  (*\textbf{transfer}*)(msg.sender, _to, _amount - 1);
+  r2 (*\textbf{:=}*) amount - 15;
+  r3 (*\textbf{:=}*) amount - 15;
+  r4 (*\textbf{:=}*) (*\textbf{sload}*)(vesting.startTime);
+  (*\textbf{no-op}*);
+\end{lstlisting}
+Then using the rule in Figure~\ref{fig:sum-gen}, \toolname generates the following summary: 
+\begin{lstlisting}[linewidth=9cm,frame=none, numbers=none]
+  $\sumi{sstore}(\mathtt{vesting.amount}, \pstate_S[\mathtt{\_amount}] - 1)@(\pstate_S[\mathtt{\_amount}]>0)$;
+  $\sumi{transfer}(\pstate_S[\mathtt{msg.sender}], \pstate_S[\mathtt{\_to}], \pstate_S[\mathtt{\_amount}] - 1)@(\pstate_S[\mathtt{\_amount}]>0)$;
+\end{lstlisting}
+In particular, our
 tool summarizes the side effects of the \texttt{call} and \texttt{sstore}
-instructions at lines 2 and 3, respectively.  The remaining instructions are
+instructions at lines 2 and 3 in Figure~\ref{fig:sum-interp}b, respectively.  The remaining instructions (E.g., statements from line 5 to 8) are
 omitted from the summary because they have no persistent side effects.\looseness=-1
 \end{example}
 
-Given a method summary and a program state $\pstate$, we use the procedure in
+Once \toolname generates the summary for each procedure, we still need to adjust the symbolic evaluation engine to cope with the summaries. In particular, given a method summary and a program state $\pstate$, we use the procedure in
 Figure~\ref{fig:sum-inter} to reproduce the effects of executing the method
 symbolically on $\pstate$ as follows. Recall that we generate the summary by
 executing the method on a fully symbolic state $\pstate_S=\{x_1\mapsto

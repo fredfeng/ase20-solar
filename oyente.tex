@@ -36,7 +36,7 @@
 % as the exploit. We evaluate \oyente and \toolname on the \etherscan data set, and 
 % both systems use a timeout of ten minutes.
 
-We first compare with \mythril~\cite{mythril} by generating exploits for the reentrancy vulnerability. \mythril takes as input 
+We first compare with \mythril~\cite{mythril}~\footnote{Since both \toolname and \mythril are general-purpose analyzers for common vulnerabilities in smart contracts, for fair comparison, we only enable the relevant queries in the evaluation.ol} by generating exploits for the reentrancy vulnerability. \mythril takes as input 
 a smart contract and checks whether there are concrete traces that match
 the tool's predefined security properties. If so, the tool returns a counterexample
 as the exploit. We evaluate \mythril and \toolname on the \etherscan data set, and 
@@ -67,7 +67,7 @@ both systems use a timeout of 10 minutes.\looseness=-1
 % successfully finds their exploits, and we manage to reproduce 102 of the attacks 
 % in our testbed.
 
-For 156 contracts flagged as vulnerable
+For 156 contracts flagged as \reentrancy vulnerablity
 by at least one tool, we manually determine the ground truth and summarize the results in Figure~\ref{fig:eval-oyente}. 
 % As shown in Table~\ref{fig:eval-oyente-fp-fn}, for 
 % the Timestamp vulnerability, the FN and FP rates of \toolname are 7\% and 10\%,

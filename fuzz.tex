@@ -30,7 +30,7 @@ the Ethereum Virtual Machine (EVM) with extra assertions.
 \hline
 \multirow{2}{*}{Vulnerability} & \multicolumn{3}{l|}{\toolname} & \multicolumn{3}{l|}{\contractfuzz} \\ \cline{2-7} 
                                & No.       & FP       & FN      & No.        & FP        & FN        \\ \hline
-Timestamp                      & 16        & 0        & 1       & 13         & 4         &7         \\ \hline
+Timestamp                      & 16        & 0        & 1       & 13         & 3         &7         \\ \hline
 Gasless Send                   & 17        & 0        & 0       & 14         & 3         & 6         \\ \hline
 Bad Random                     & 9        & 0        & 0       & 5          & 1         & 5         \\ \hline
 \end{tabular}
@@ -50,7 +50,7 @@ on the 33 benchmarks from the \contractfuzz artifact~\cite{fuzz-data} plus anoth
 \paragraph{Summary of results}
 The results of our evaluation are summarized in Table~\ref{fig:eval-fuzz}.
 For the timestamp dependency, \contractfuzz flags 13 benchmarks 
-as vulnerable. However, 4 of them are false alarms, and \contractfuzz fails to detect 7 
+as vulnerable. However, 3 of them are false alarms, and \contractfuzz fails to detect 7 
 vulnerable benchmarks. On the other hand, \toolname detects most of 
 the benchmarks with only one false negative, which is caused by a timeout of the Vandal
 decompiler~\cite{madmax}.\looseness=-1

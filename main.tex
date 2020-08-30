@@ -2,10 +2,18 @@
 % LLNCS macro package for Springer Computer Science proceedings;
 % Version 2.20 of 2017/10/04
 %
-\documentclass[sigconf,review,anonymous]{acmart}
+% \documentclass[sigconf,review,anonymous]{acmart}
+\documentclass[sigconf]{acmart}
 %
 % \usepackage{subcaption} %% For complex figures with subfigures/subcaptions
                         %% http://ctan.org/pkg/subcaption
+
+\copyrightyear{2020}
+\acmYear{2020}
+\setcopyright{rightsretained}
+\acmConference[ASE '20]{35th IEEE/ACM International Conference on Automated Software Engineering}{September 21--25, 2020}{Virtual Event, Australia}
+\acmBooktitle{35th IEEE/ACM International Conference on Automated Software Engineering (ASE '20), September 21--25, 2020, Virtual Event, Australia}\acmDOI{10.1145/3324884.3416646}
+\acmISBN{978-1-4503-6768-4/20/09}
 
 %% self-defined packages
 \usepackage{xspace}
@@ -57,6 +65,22 @@
 \begin{document}
 %
 \title{Summary-Based Symbolic Evaluation for Smart Contracts}
+
+\author{Yu Feng}
+\email{yufeng@cs.ucsb.edu}
+\affiliation{%
+  \institution{University of California, Santa Barbara}
+}
+\author{Emina Torlak}
+\email{emina@cs.washington.edu}
+\affiliation{%
+  \institution{University of Washington}
+}
+\author{Rastislav Bodik}
+\email{bodik@cs.washington.edu}
+\affiliation{%
+  \institution{University of Washington}
+}
 %
 %\titlerunning{Abbreviated paper title}
 % If the paper title is too long for the running head, you can set
@@ -99,6 +123,7 @@
 \input{eval.tex}
 \input{related.tex}
 \input{concl.tex}
+\input{ack}
 %
 % ---- Bibliography ----
 %

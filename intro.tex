@@ -114,6 +114,12 @@ Improving robustness of smart contracts is thus a pressing practical problem. Un
 % which exploit common vulnerabilities in victim contracts. \todo{Our design choice is based on two key insights. First, an effective way to test the security properties of a smart contract is to construct \emph{real} exploits triggered by attack contracts, which faithfully simulates the untrusted execution environment on blockchains. Second, a security analyst can easily initialize boilerplate code (e.g., constructor of the victim with its address) for the basic communication channel between the attack and victim contracts, and then leverage constraint solvers to \emph{synthesize} an attack contract by efficiently exploring the search space defined by the victim's public interface.}
 This paper presents \toolname, a new point in the design space of smart contract analysis tools that achieves an effective trade-off among expressiveness, precision, and scalability. \toolname provides the security analyst with a query language for expressing \emph{vulnerability patterns} 
 that can be exploited in an attack, as well as an automatic engine for \emph{synthesizing} an attack program (if one exists) that exploits the given vulnerability. Our key insight is based on the observation that an attacker typically exploits the vulnerability by making a sequence of transitions (calls over public methods of the victim), in which storage states are preserved across different transitions. As shown in Section~\ref{sec:vul}, because most types of vulnerabilities can be overapproximated through assertions over storage variables, this insight motivates an effective summary-based symbolic evaluation technique where the summary of a method soundly models its side-effect over storage variables, which dramatically reduces the number of instructions that \toolname has to re-evaluate symbolically. As a result, \toolname is able to scale reasoning with better precision to large contracts that are out of reach of existing symbolic execution~\cite{teether,oyente} and fuzzing~\cite{contractfuzzer} tools. 
+\begin{figure*}
+  \centering
+  \includegraphics[scale=0.4]{motivate.png}
+\caption{Sample contracts to show the Reentrancy attack.}
+\label{fig:motivate}
+\end{figure*}
 % Our engine employs a novel summary-based symbolic evaluation technique to scale precise reasoning to large contracts 
 % that are out of reach of existing symbolic execution~\cite{teether,oyente} and fuzzing~\cite{contractfuzzer} tools. 
 Furthermore, previous summarization techniques~\cite{AnandGT08,Godefroid07} rely on symbolic execution and 
@@ -137,12 +143,7 @@ naive approach fails to scale to realistic contracts.
 %To tackle this challenge,
 %we employ a novel \emph{summary-based symbolic evaluation}, which enables
 %\toolname to both find real attacks and scale to large programs. 
-\begin{figure}
-  \centering
-  \includegraphics[scale=0.40]{motivate.pdf}
-\caption{Sample contracts to show the Reentrancy attack.}
-\label{fig:motivate}
-\end{figure}
+
 % Fig~\ref{fig:overview} shows an overview of our approach. Given the public
 % methods provided by the Application Binary Interface (ABI) of a smart contract,
 % our system first \emph{symbolically} evaluates each method and generates a
@@ -240,6 +241,6 @@ candidate programs (Section~\ref{sec:parallel}).
 \item We perform a systematic evaluation of \toolname on the entire data set
 from \etherscan. Our experiments demonstrate the substantial benefits of our
 technique and show that \toolname outperforms three state-of-the-art smart
-contracts analyzers in terms of running time, precision, and soundness
+contracts analyzers in terms of running time and precision.
 (Section~\ref{sec:eval}).
 \end{itemize}

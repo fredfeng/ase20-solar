@@ -14,7 +14,7 @@
 % \end{table}
 
 To understand the impact of our summary-based symbolic evaluation described 
-in Section~\ref{sec:sum} and how are queries of different granularity related to the performance, we run \toolname on the \etherscan data set with different queries. In particular, $\vulnerability$ denotes the approximate query discussed in Section~\ref{sec:vul}, and $\vulnerability^{\diamond}$ corresponds to more precise queries adopted from the previous work~\cite{Hirai17}. Specifically, the more precise queries in $\vulnerability^{\diamond}$ include not only constraints in $\vulnerability$ but also extra constraints that encode the invariant of storage balance. In other words, $\vulnerability^{\diamond} \implies \vulnerability$.
+in Section~\ref{sec:sum} and how are queries of different granularity related to the performance, we run \toolname on the \etherscan data set with different queries. In particular, $\vulnerability$ denotes the approximate query discussed in Section~\ref{sec:vul}, and $\vulnerability^{\diamond}$ corresponds to more precise queries adopted from the previous work~\cite{Hirai17}. Specifically, the more precise queries in $\vulnerability^{\diamond}$ include not only constraints in $\vulnerability$ but also extra constraints that encode the invariant of storage balance. In other words, $\vulnerability^{\diamond}$ implies $\vulnerability$ (I.e., $\vulnerability^{\diamond} \implies \vulnerability$).
 To speed up the evaluation, for both settings, we enable the
 parallel synthesis optimization discussed in Section~\ref{sec:impl}. 
 %\input{plot-sum.tex}
